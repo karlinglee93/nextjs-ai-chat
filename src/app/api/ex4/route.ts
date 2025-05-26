@@ -38,13 +38,14 @@ const formatMessage = (message: VercelChatMessage) => {
   return `*${message.role}: ${message.content}*`;
 };
 
-const TEMPLATE = `Answer the user's questions based only on the
-following context. If the answer is not in the context, reply politely that you do not have that information available.:
+const TEMPLATE = `Answer the user's questions based only on the following context. If the answer is not in the context, reply politely that you do not have that information available.:
 ==================
 Context: {context}
 ==================
 Current conversation: {chat_history}
-user: {question} assistant:`;
+
+user: {question} 
+assistant:`;
 
 export async function POST(req: Request) {
   try {
