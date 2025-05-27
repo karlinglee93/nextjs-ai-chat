@@ -13,19 +13,17 @@ import { RunnableSequence } from "@langchain/core/runnables";
 import { formatDocumentsAsString } from "langchain/util/document";
 import { CharacterTextSplitter } from "langchain/text_splitter";
 
-const loader = new JSONLoader("src/data/states.json", [
-  "/state",
-  "/code",
-  "/nickname",
-  "/website",
-  "/admission_date",
-  "/admission_number",
-  "/capital_url",
-  "/population",
-  "/capital_city",
-  "/population_rank",
-  "/constitution_url",
-  "/twitter_url",
+import { getPromptTemplate } from "@/lib/promptTemplates";
+import { appConfig } from "@/lib/config";
+
+const loader = new JSONLoader("public/data/output.json", [
+  "/douyin_id",
+  "/name",
+  "/region",
+  "/gender",
+  "/total_sales_amount",
+  "/product_name",
+  "/product_category",
 ]);
 
 export const dynamic = "force-dynamic";
@@ -38,14 +36,7 @@ const formatMessage = (message: VercelChatMessage) => {
   return `*${message.role}: ${message.content}*`;
 };
 
-const TEMPLATE = `Answer the user's questions based only on the following context. If the answer is not in the context, reply politely that you do not have that information available.:
-==================
-Context: {context}
-==================
-Current conversation: {chat_history}
-
-user: {question} 
-assistant:`;
+const TEMPLATE = getPromptTemplate(appConfig.assistantName);
 
 export async function POST(req: Request) {
   try {
@@ -59,36 +50,17 @@ export async function POST(req: Request) {
 
     const currentMessageContent = messages[messages.length - 1].content;
 
-    // const docs = await loader.load();
-
-    // load a JSON object
-    const textSplitter = new CharacterTextSplitter();
-    const docs = await textSplitter.createDocuments([
-      JSON.stringify({
-        state: "Kansas",
-        slug: "kansas",
-        code: "KS",
-        nickname: "Sunflower State",
-        website: "https://www.kansas.gov",
-        admission_date: "1861-01-29",
-        admission_number: 34,
-        capital_city: "Topeka",
-        capital_url: "http://www.topeka.org",
-        population: 2893957,
-        population_rank: 34,
-        constitution_url: "https://kslib.info/405/Kansas-Constitution",
-        twitter_url: "http://www.twitter.com/ksgovernment",
-      }),
-    ]);
+    const docs = await loader.load();
 
     const prompt = PromptTemplate.fromTemplate(TEMPLATE);
 
+    const { modelName, temperature, streaming, verbose } = appConfig.model;
     const model = new ChatOpenAI({
       apiKey: process.env.OPENAI_API_KEY!,
-      model: "gpt-3.5-turbo",
-      temperature: 0,
-      streaming: true,
-      verbose: true,
+      model: modelName,
+      temperature,
+      streaming,
+      verbose,
     });
 
     /**
