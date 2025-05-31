@@ -3,9 +3,9 @@ export const appConfig = {
   assistantName: "Glu",
   themeColor: "#8A2BE2",
   model: {
-    modelName: "gpt-3.5-turbo",
+    modelName: "gpt-4.1-nano",
     temperature: 0,
-    streaming: true,
-    verbose: true,
+    streaming: false,
+    verbose: false,
   },
 };

@@ -39,3 +39,6 @@ next-env.d.ts
 scripts/preprocess-data.js
 public/data/input.csv
 public/data/output.json
+public/data/input.xls
+public/data/output.csv
+scripts/explore_data.ipynb

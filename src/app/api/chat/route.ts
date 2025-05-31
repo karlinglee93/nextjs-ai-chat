@@ -1,96 +1,87 @@
-// RAG Pattern Chat with JSON Object/File
-import {
-  Message as VercelChatMessage,
-  StreamingTextResponse,
-  createStreamDataTransformer,
-} from "ai";
-
+import { db } from "@vercel/postgres";
 import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
-import { HttpResponseOutputParser } from "langchain/output_parsers";
-import { JSONLoader } from "langchain/document_loaders/fs/json";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { formatDocumentsAsString } from "langchain/util/document";
-import { CharacterTextSplitter } from "langchain/text_splitter";
+// import { createClient } from "@supabase/supabase-js";
 
-import { getPromptTemplate } from "@/lib/promptTemplates";
 import { appConfig } from "@/lib/config";
-
-const loader = new JSONLoader("public/data/output.json", [
-  "/douyin_id",
-  "/name",
-  "/region",
-  "/gender",
-  "/total_sales_amount",
-  "/product_name",
-  "/product_category",
-]);
+import {
+  getPromptTemplateAgentAnalysis,
+  getPromptTemplateAgentSql,
+} from "@/lib/promptTemplates";
+import { formatMessage } from "@/lib/utils";
+import { createStreamDataTransformer, StreamingTextResponse } from "ai";
+import { HttpResponseOutputParser } from "langchain/output_parsers";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Basic memory formatter that stringifies and passes
- * message history directly into the model.
- */
-const formatMessage = (message: VercelChatMessage) => {
-  return `*${message.role}: ${message.content}*`;
-};
+// Setup env variables
+const { OPENAI_API_KEY } = process.env;
 
-const TEMPLATE = getPromptTemplate(appConfig.assistantName);
+// Setup prompt
+const TEMPLATE_AGENT_SQL = getPromptTemplateAgentSql();
+const agentSqlPrompt = PromptTemplate.fromTemplate(TEMPLATE_AGENT_SQL);
+const TEMPLATE_AGENT_ANALYSIS = getPromptTemplateAgentAnalysis();
+const agentAnalysisPrompt = PromptTemplate.fromTemplate(
+  TEMPLATE_AGENT_ANALYSIS
+);
+
+// Setup openai model
+const { modelName, temperature, streaming, verbose } = appConfig.model;
+const model = new ChatOpenAI({
+  apiKey: OPENAI_API_KEY!,
+  model: modelName,
+  temperature,
+  streaming,
+  verbose,
+});
 
 export async function POST(req: Request) {
   try {
-    // Extract the messages from the body of the request
+    // Handle messages
     const { messages } = await req.json();
-
     const formattedPreviousMessages = messages
       .slice(0, -1)
       .map(formatMessage)
       .join("\n");
-
     const currentMessageContent = messages[messages.length - 1].content;
 
-    const docs = await loader.load();
-
-    const prompt = PromptTemplate.fromTemplate(TEMPLATE);
-
-    const { modelName, temperature, streaming, verbose } = appConfig.model;
-    const model = new ChatOpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-      model: modelName,
-      temperature,
-      streaming,
-      verbose,
-    });
-
-    /**
-     * Chat models stream message chunks rather than bytes, so this
-     * output parser handles serialization and encoding.
-     */
+    // Setup chain
     const parser = new HttpResponseOutputParser();
-
-    const chain = RunnableSequence.from([
+    const agentSqlChain = RunnableSequence.from([
       {
         question: (input) => input.question,
         chat_history: (input) => input.chat_history,
-        context: () => formatDocumentsAsString(docs),
       },
-      prompt,
+      agentSqlPrompt,
       model,
       parser,
     ]);
 
-    // Convert the response into a friendly text-stream
-    const stream = await chain.stream({
+    // Agent 1 - convert the response into SQL
+    const stream = await agentSqlChain.stream({
       chat_history: formattedPreviousMessages,
       question: currentMessageContent,
     });
 
+    // Connect database
+    // const client = await db.connect();
+    // client.release();
+    // Retrieve data from database based on the generated sql
+    // client.query();
+    // const res = await client.query(sql.content);
+    // await client.end();
+
     // Respond with the stream
+    // Construct response message
+
     return new StreamingTextResponse(
       stream.pipeThrough(createStreamDataTransformer())
     );
-  } catch (e: any) {
-    return Response.json({ error: e.message }, { status: e.status ?? 500 });
+  } catch (error) {
+    return Response.json(
+      { error: error.message },
+      { status: error.status ?? 500 }
+    );
   }
 }
