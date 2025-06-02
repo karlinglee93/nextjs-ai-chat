@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 import { useRef, useEffect } from "react";
 
 import { appConfig } from "@/lib/config";
