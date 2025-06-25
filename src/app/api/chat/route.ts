@@ -4,7 +4,8 @@ import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputParser } from "@langchain/core/output_parsers";
 import { HttpResponseOutputParser } from "langchain/output_parsers";
 import { db } from "@vercel/postgres";
-import { StreamingTextResponse, createStreamDataTransformer } from "ai";
+import { LangChainAdapter } from "ai";
+// import { HttpsProxyAgent } from "https-proxy-agent";
 
 import { appConfig } from "@/lib/config";
 import {
@@ -12,6 +13,8 @@ import {
   getDataAnalyzerPromptTemplate,
 } from "@/lib/promptTemplates";
 import { formatMessage } from "@/lib/utils";
+
+// const proxyAgent = new HttpsProxyAgent("http://127.0.0.1:7890");
 
 // 1. Setup env variables
 const { OPENAI_API_KEY } = process.env;
@@ -36,6 +39,10 @@ const model = new ChatOpenAI({
   temperature,
   streaming,
   verbose,
+  timeout: 15000,
+  // configuration: {
+  //   httpAgent: proxyAgent,
+  // },
 });
 
 export async function POST(req: Request) {
@@ -100,10 +107,11 @@ export async function POST(req: Request) {
       chat_history: formattedPreviousMessages,
     });
 
-    return new StreamingTextResponse(
-      stream.pipeThrough(createStreamDataTransformer())
+    return LangChainAdapter.toDataStreamResponse(
+      stream.pipeThrough(new TextDecoderStream())
     );
   } catch (error) {
+    console.log("error:", error);
     return Response.json(
       { error: error.message },
       { status: error.status ?? 500 }
