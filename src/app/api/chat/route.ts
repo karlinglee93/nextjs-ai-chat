@@ -1,49 +1,13 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { RunnableSequence } from "@langchain/core/runnables";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
-import { HttpResponseOutputParser } from "langchain/output_parsers";
-import { db } from "@vercel/postgres";
-import { LangChainAdapter } from "ai";
-// import { HttpsProxyAgent } from "https-proxy-agent";
+import { generateObject, Output, streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
 
 import { appConfig } from "@/lib/config";
-import {
-  getSqlGeneratorPromptTemplate,
-  getDataAnalyzerPromptTemplate,
-} from "@/lib/promptTemplates";
-import { formatMessage } from "@/lib/utils";
+import { formatMessage, queryDb } from "@/lib/utils";
+import { interpAgentSchema } from "@/lib/schema";
+import { setupGlobalProxy } from "@/lib/proxy";
 
-// const proxyAgent = new HttpsProxyAgent("http://127.0.0.1:7890");
-
-// 1. Setup env variables
-const { OPENAI_API_KEY } = process.env;
-
-// 2. Setup prompt
-const { sqlGeneratorSystemMessage, sqlGeneratorHumanMessage } =
-  getSqlGeneratorPromptTemplate();
-const sqlGeneratorPromptTemplate = ChatPromptTemplate.fromMessages([
-  sqlGeneratorSystemMessage,
-  sqlGeneratorHumanMessage,
-]);
-const { dataAnalyzerSystemMessage } = getDataAnalyzerPromptTemplate();
-const dataAnalyzerPromptTemplate = ChatPromptTemplate.fromMessages([
-  dataAnalyzerSystemMessage,
-]);
-
-// 3. Setup openai model
-const { modelName, temperature, streaming, verbose } = appConfig.model;
-const model = new ChatOpenAI({
-  apiKey: OPENAI_API_KEY!,
-  model: modelName,
-  temperature,
-  streaming,
-  verbose,
-  timeout: 15000,
-  // configuration: {
-  //   httpAgent: proxyAgent,
-  // },
-});
+setupGlobalProxy();
 
 export async function POST(req: Request) {
   try {
@@ -54,62 +18,123 @@ export async function POST(req: Request) {
       .join("\n");
     const currentMessageContent = messages[messages.length - 1].content;
 
-    // Setup sql generator chain
-    const parser = new JsonOutputParser();
-    const sqlGeneratorChain = RunnableSequence.from([
-      {
-        question: (input) => input.question,
-        chat_history: (input) => input.chat_history,
-      },
-      sqlGeneratorPromptTemplate,
+    const model = openai(appConfig.model);
+    const { object: sqlAgentResp } = await generateObject({
       model,
-      parser,
-    ]);
+      schema: z.object({
+        reasoning: z
+          .string()
+          .describe(
+            "short natural-language explanation of how the AI thinks about the user's question, including its logic for deciding whether a SQL query can answer it. This should reflect the AI's thought process (string)"
+          ),
+        canSql: z
+          .boolean()
+          .describe(
+            "true if the question can be answered with a SQL query, false otherwise (boolean)"
+          ),
+        sql: z
+          .string()
+          .nullable()
+          .describe(
+            "PostgreSQL query string if canSql is true, null if false (string or null)"
+          ),
+      }),
+      system: `
+        You are an AI assistant that analyzes natural-language questions and decides whether they can be answered using SQL over the \`tiktok_sales\` table.
+        
+        Allowed columns, along with their meanings:
+        - douyin_id: Douyin account ID
+        - name: User's name
+        - bio: Account bio or description
+        - region: User's region
+        - gender: "F" or "M"
+        - follower_count: Number of followers
+        - video_count: Number of videos
+        - duration: Livestream duration in seconds
+        - average_views: Average viewers during livestream
+        - total_likes: Total number of likes
+        - total_danmaku_count: Total number of danmaku (chat comments)
+        - danmaku_user_count: Number of users who sent danmaku
+        - danmaku_content: Content of danmaku (chat messages)
+        - total_sales_amount: Total sales amount during livestream
+        - gift_senders_count: Number of gift senders
+        - gift_income: Total income from gifts
+        - top_donors: List of top donors
+        - product_category: Category of promoted product
 
-    // Get response
-    const sqlGeneratorResponse = await sqlGeneratorChain.invoke({
-      chat_history: formattedPreviousMessages,
-      question: currentMessageContent,
+        Return a JSON object *exactly* matching this schema:
+        {
+          "reasoning": "AI's thought process about the question — how it interprets the user's question, and why SQL can or cannot be used",
+          "canSql": true | false,
+          "sql": "...valid **PostgreSQL** SQL query..." | null
+        }
+
+        Rules:
+        1. If the dataset cannot answer the question, set "canSql": false and "sql": null, and use "reasoning" to briefly say **why not**.
+        2. If it can, set "canSql": true, provide a valid SQL statement, and use "reasoning" to briefly say **why** the query answers the question.
+        3. Keep reasoning ≤ 40 words.
+        4. Output nothing outside the JSON block.
+      `,
+      prompt: `
+        User question:
+        ${currentMessageContent}
+
+        Chat history:
+        ${formattedPreviousMessages}
+
+        Respond with the required JSON only.
+      `,
     });
 
-    // Process the response
-    let result = [];
-    let canAnswer = sqlGeneratorResponse.can_answer;
-
-    if (canAnswer) {
-      const client = await db.connect();
-      const queryResult = await client.query(sqlGeneratorResponse.sql);
-      result = queryResult.rows;
-      client.release();
+    const dbRows = [];
+    if (sqlAgentResp.canSql) {
+      dbRows.push(...(await queryDb(sqlAgentResp.sql!)));
     }
 
-    // Setup data analyzer chain
-    const dataAnalyzerChain = RunnableSequence.from([
-      {
-        reasoning: (input) => input.reasoning,
-        sql: (input) => input.sql,
-        data: (input) => input.data,
-        chat_history: (input) => input.chat_history,
-      },
-      dataAnalyzerPromptTemplate,
+    const result = await streamText({
       model,
-      new HttpResponseOutputParser(),
-    ]);
+      experimental_output: Output.object({
+        schema: interpAgentSchema,
+      }),
+      system: `
+          You are a senior data-analytics assistant.
 
-    console.log(`reasoning: ${sqlGeneratorResponse.reasoning}`);
-    console.log(`sql: ${sqlGeneratorResponse.sql}`);
-    console.log(`data: ${JSON.stringify(result)}`);
+          ➊ Write "interpret" (≤40 words).
+          ➋ Pick ONE best chart type:
+            • Bar  – comparing categorical groups (xAxis = strings)
+            • Line – showing numeric trend over a continuous x-axis (xAxis = numbers)
+            • Pie  – parts-of-whole at one snapshot
+            Set chartType to that single value.
 
-    const stream = await dataAnalyzerChain.stream({
-      reasoning: sqlGeneratorResponse.reasoning,
-      sql: sqlGeneratorResponse.sql,
-      data: JSON.stringify(result),
-      chat_history: formattedPreviousMessages,
+          ➌ Build formattedData:
+            • For bar  : 
+                { xAxis:[{ data:["A","B"] }], series:[{ data:[4,2] }] }
+            • For line : 
+                { xAxis:[{ data:[1,2,3] }], series:[{ data:[5,6,7] }] }
+            • For pie  : 
+                { data:[{ id:0, value:10, label:"A" }, ...] }
+
+          Return JSON only:
+          {
+            "reasoning": "<same as input reasoning>",
+            "sql": "<same as input sql>",
+            "data": "<same as input data>",
+            "interpret": "...",
+            "chartType": "bar" | "line" | "pie",
+            "formattedData": { ... }
+          }
+          No extra keys, no markdown.
+        `,
+      prompt: `
+          reasoning: ${sqlAgentResp.reasoning}
+          sql: ${sqlAgentResp.sql}
+          data: ${JSON.stringify(dbRows)}
+
+          Respond with the required JSON only.
+      `,
     });
 
-    return LangChainAdapter.toDataStreamResponse(
-      stream.pipeThrough(new TextDecoderStream())
-    );
+    return result.toDataStreamResponse();
   } catch (error) {
     console.log("error:", error);
     return Response.json(
