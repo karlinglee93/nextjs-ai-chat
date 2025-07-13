@@ -1,20 +1,41 @@
 import { z } from "zod";
 
+/*
+ * Agent1
+ */
+export const getAgent1Schema = () =>
+  z.object({
+    reasoning: z
+      .string()
+      .describe(
+        "short natural-language explanation of how the AI thinks about the user's question, including its logic for deciding whether a SQL query can answer it. This should reflect the AI's thought process (string)"
+      ),
+    canSql: z
+      .boolean()
+      .describe(
+        "true if the question can be answered with a SQL query, false otherwise (boolean)"
+      ),
+    sql: z
+      .string()
+      .nullable()
+      .describe(
+        "PostgreSQL query string if canSql is true, null if false (string or null)"
+      ),
+  });
+
+/*
+ * Agent2
+ */
+
 // Bar chart format
 const barFormat = z.object({
-  xAxis: z.tuple([
-    z.object({ data: z.array(z.string()) }), // categorical labels
-  ]),
-  series: z.array(
-    z.object({ data: z.array(z.number()) }) // numbers
-  ),
+  xAxis: z.tuple([z.object({ data: z.array(z.string()) })]),
+  series: z.array(z.object({ data: z.array(z.number()) })),
 });
 
 // Line chart format
 const lineFormat = z.object({
-  xAxis: z.tuple([
-    z.object({ data: z.array(z.number()) }), // numeric x-axis
-  ]),
+  xAxis: z.tuple([z.object({ data: z.array(z.number()) })]),
   series: z.array(z.object({ data: z.array(z.number()) })),
 });
 
@@ -30,17 +51,24 @@ const pieFormat = z.object({
 });
 
 // Master schema
-export const interpAgentSchema = z.object({
-  reasoning: z.string().describe("same as input reasoning"),
-  sql: z.string().nullable().describe("same as input sql"),
-  data: z.string().describe("same as input data"),
-  interpret: z.string().describe("short insight (≤40 words)"),
-  chartType: z
-    .enum(["bar", "line", "pie"])
-    .describe("`bar`, `line`, or `pie`  (exactly one)"),
-  formattedData: z.union([barFormat, lineFormat, pieFormat]).describe(`
-      » bar  : { xAxis:[{ data:[string] }], series:[{ data:[number] }] }
-      » line : { xAxis:[{ data:[number] }], series:[{ data:[number] }] }
-      » pie  : { data:[{ id, value, label }] }
-    `),
-});
+export const getAgent2Schema = () =>
+  z.object({
+    reasoning: z.string().describe("same as input reasoning"),
+    sql: z.string().nullable().describe("same as input sql"),
+    data: z.string().describe("same as input data"),
+    interpret: z.string().describe("short insight about the data (≤40 words)"),
+    chartType: z
+      .enum(["bar", "line", "pie"])
+      .describe(
+        "`bar`, `line`, or `pie`  (choose the single best chart type for displaying the data)"
+      ),
+    formattedData: z
+      .union([barFormat, lineFormat, pieFormat])
+      .describe(
+        [
+          "If bar  -> { xAxis:[{ data:[string] }], series:[{ data:[number] }] }",
+          "If line -> { xAxis:[{ data:[number] }], series:[{ data:[number] }] }",
+          "If pie  -> { data:[{ id, value, label }] }",
+        ].join("\n")
+      ),
+  });
