@@ -6,7 +6,11 @@ import { appConfig } from "@/lib/config";
 import { formatMessage, queryDb } from "@/lib/utils";
 import { getAgent1Schema, getAgent2Schema } from "@/lib/schema";
 import { setupGlobalProxy } from "@/lib/proxy";
-import { getAgent1SystemPrompt, getAgent2SystemPrompt } from "@/lib/prompt";
+import {
+  getAgent1SystemPrompt,
+  getAgent2GeneralSystemPrompt,
+  getAgent2TechnicalSystemPrompt,
+} from "@/lib/prompt";
 
 setupGlobalProxy();
 
@@ -22,6 +26,7 @@ export async function POST(req: Request) {
     const model = openai(appConfig.model);
     const { object: agent1Result } = await generateObject({
       model,
+      temperature: 0,
       schema: getAgent1Schema(),
       system: getAgent1SystemPrompt(),
       prompt: `
@@ -36,16 +41,20 @@ export async function POST(req: Request) {
     });
 
     const dbRows = [];
-    if (agent1Result.canSql) {
+    if (agent1Result.type === "technical") {
       dbRows.push(...(await queryDb(agent1Result.sql!)));
     }
 
     const agent2Result = streamText({
       model,
+      temperature: 0,
       experimental_output: Output.object({
         schema: getAgent2Schema(),
       }),
-      system: getAgent2SystemPrompt(),
+      system: {
+        general: getAgent2GeneralSystemPrompt(),
+        technical: getAgent2TechnicalSystemPrompt(),
+      }[agent1Result.type],
       prompt: `
         reasoning: ${agent1Result.reasoning}
         sql: ${agent1Result.sql}

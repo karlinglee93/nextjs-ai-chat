@@ -8,25 +8,24 @@ export const getAgent1Schema = () =>
     reasoning: z
       .string()
       .describe(
-        "short natural-language explanation of how the AI thinks about the user's question, including its logic for deciding whether a SQL query can answer it. This should reflect the AI's thought process (string)"
+        "short natural-language explanation of how the AI thinks about the user's question, including its logic for deciding whether a SQL query can answer it. This should reflect the AI's thought process"
       ),
-    canSql: z
-      .boolean()
-      .describe(
-        "true if the question can be answered with a SQL query, false otherwise (boolean)"
-      ),
+    type: z.enum(["general", "technical"]).describe(
+      `"technical" if the question can be answered with a SQL query; 
+       "general" if it's a broader or open-ended question not suitable for SQL
+      `
+    ),
     sql: z
       .string()
       .nullable()
       .describe(
-        "PostgreSQL query string if canSql is true, null if false (string or null)"
+        "PostgreSQL query string if type is 'technical', otherwise null"
       ),
   });
 
 /*
  * Agent2
  */
-
 // Bar chart format
 const barFormat = z.object({
   xAxis: z.tuple([z.object({ data: z.array(z.string()) })]),
@@ -56,7 +55,7 @@ export const getAgent2Schema = () =>
     reasoning: z.string().describe("same as input reasoning"),
     sql: z.string().nullable().describe("same as input sql"),
     data: z.string().describe("same as input data"),
-    interpret: z.string().describe("short insight about the data (≤40 words)"),
+    interpret: z.string().describe("short insight about the data (≤50 words)"),
     chartType: z
       .enum(["bar", "line", "pie"])
       .describe(

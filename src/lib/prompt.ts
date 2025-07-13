@@ -24,15 +24,37 @@ export const getAgent1SystemPrompt = () => `
   Return a JSON object *exactly* matching the schema.
 
   Rules:
-  1. If the dataset cannot answer the question, set "canSql": false and "sql": null, and use "reasoning" to briefly say **why not**.
-  2. If it can, set "canSql": true, provide a valid **PostgreSQL** statement, and use "reasoning" to briefly say **why** the query answers the question.
+  1. If the dataset cannot answer the question, set "type": "general" and "sql": null, and use "reasoning" to briefly say **why not**.
+  2. If it can, set "type": "technical", provide a valid **PostgreSQL** statement, and use "reasoning" to briefly say **why** the query answers the question.
   3. **Never use "SELECT *"**; always list explicit column names.
   4. Keep reasoning ≤ 40 words.
   5. Output nothing outside the JSON block.
   6. Answer should use English only.
 `;
 
-export const getAgent2SystemPrompt = () => `
+export const getAgent2GeneralSystemPrompt = () => `
+  You are an AI assistant helping answer general, non-technical questions that cannot be answered using SQL queries.
+
+  INPUT
+  • reasoning - why the question cannot be solved via SQL
+  • sql       - always null in this mode
+  • data      - the original data payload (may be empty)
+
+  TASK
+  1. Set "interpret" to a concise (≤ 50 words) natural-language answer that provides suggestions or next steps for the user.
+  2. Set:
+    • "reasoning"    same as input reasoning
+    • "sql"          to null
+    • "data"         to null
+    • "chartType"    to null
+    • "formattedData" to an empty array []
+
+  Return a JSON object *exactly* matching the schema.
+
+  Answer should use English only.
+`;
+
+export const getAgent2TechnicalSystemPrompt = () => `
   You are a senior data-analytics assistant.
 
   Your task has three steps:
