@@ -1,6 +1,5 @@
 import { generateObject, Output, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { z } from "zod";
 
 import { appConfig } from "@/lib/config";
 import { formatMessage, queryDb } from "@/lib/utils";
@@ -24,6 +23,7 @@ export async function POST(req: Request) {
     const currentMessageContent = messages[messages.length - 1].content;
 
     const model = openai(appConfig.model);
+    // Agent 1 - SQL agent
     const { object: agent1Result } = await generateObject({
       model,
       temperature: 0,
@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       dbRows.push(...(await queryDb(agent1Result.sql!)));
     }
 
+    // Agent 2 - Chart agent
     const agent2Result = streamText({
       model,
       temperature: 0,

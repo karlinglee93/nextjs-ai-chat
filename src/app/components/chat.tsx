@@ -8,12 +8,13 @@ import { useRef, useEffect } from "react";
 import { appConfig } from "@/lib/config";
 
 export function Chat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
-    api: "api/chat",
-    onError: (e) => {
-      console.log(e);
-    },
-  });
+  const { messages, input, handleInputChange, handleSubmit, setInput } =
+    useChat({
+      api: "api/chat",
+      onError: (e) => {
+        console.log(e);
+      },
+    });
   const chatParent = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -22,6 +23,22 @@ export function Chat() {
       domNode.scrollTop = domNode.scrollHeight;
     }
   });
+
+  useEffect(() => {
+    const listener = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      const question = customEvent.detail;
+      setInput(question);
+      setTimeout(() => {
+        handleSubmit(new Event("submit") as any);
+      }, 50);
+    };
+
+    window.addEventListener("send-chat", listener);
+    return () => {
+      window.removeEventListener("send-chat", listener);
+    };
+  }, [handleSubmit, setInput]);
 
   return (
     <main className="flex flex-col w-full h-screen max-h-dvh bg-background">
