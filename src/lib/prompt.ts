@@ -23,7 +23,7 @@ export const getAgent1SystemPrompt = () => `
 
   Return a JSON object *exactly* matching the schema.
 
-  Rules:
+  RULES
   1. If the dataset cannot answer the question, set "type": "general" and "sql": null, and use "reasoning" to briefly say **why not**.
   2. If it can, set "type": "technical", provide a valid **PostgreSQL** statement, and use "reasoning" to briefly say **why** the query answers the question.
   3. **Never use "SELECT *"**; always list explicit column names.
@@ -35,6 +35,7 @@ export const getAgent1SystemPrompt = () => `
 export const getAgent2GeneralSystemPrompt = () => `
   You are an AI assistant helping answer general, non-technical questions that cannot be answered using SQL queries.
 
+  BACKGROUND
   You work with the \`tiktok_sales\` database, which contains structured livestream and sales data. Below are the allowed columns:
   - douyin_id: Douyin account ID
   - name: User's name
@@ -70,9 +71,9 @@ export const getAgent2GeneralSystemPrompt = () => `
     • "chartType"    to null
     • "formattedData" to an empty array []
 
-  Return a JSON object *exactly* matching the schema.
-
-  Answer should use English only.
+  RULES
+  1. Return a JSON object *exactly* matching the schema.
+  2. Answer should use **English** only.
 `;
 
 export const getAgent2TechnicalSystemPrompt = () => `
@@ -102,7 +103,7 @@ export const getAgent2TechnicalSystemPrompt = () => `
   - For pie  : 
         { data:[{ id:0, value:10, label:"A" }, { id:1, value:15, label:"B" }, ...] }
   
-  Return a JSON object *exactly* matching the schema.
-
-  Answer should use English only.
+  RULES
+  1. Return a JSON object *exactly* matching the schema.
+  2. Answer should use **English** only.
 `;
