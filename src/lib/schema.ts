@@ -21,6 +21,14 @@ export const getAgent1Schema = () =>
       .describe(
         "PostgreSQL query string if type is 'technical', otherwise null"
       ),
+    chartType: z
+      .enum(["line", "bar", "pie", "auto"])
+      .default("auto")
+      .describe(
+        `Desired chart type.
+       • If the user's input explicitly requests "line", "bar", or "pie", return that value.  
+       • Otherwise return "auto" (the downstream agent decides).`
+      ),
   });
 
 /*
@@ -59,7 +67,7 @@ export const getAgent2Schema = () =>
     chartType: z
       .enum(["bar", "line", "pie"])
       .describe(
-        "`bar`, `line`, or `pie`  (choose the single best chart type for displaying the data)"
+        "`bar`, `line`, or `pie`(if the user asked for a specific chart, use that, otherwise choose the single best chart type for displaying the data)"
       ),
     formattedData: z
       .union([barFormat, lineFormat, pieFormat])

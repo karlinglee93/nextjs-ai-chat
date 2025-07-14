@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         reasoning: ${agent1Result.reasoning}
         sql: ${agent1Result.sql}
         data: ${JSON.stringify(dbRows)}
+        chartType: ${agent1Result.chartType}
 
         Respond with the required JSON only.
       `,

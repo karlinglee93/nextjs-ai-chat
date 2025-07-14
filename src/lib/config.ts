@@ -10,13 +10,13 @@ export const sampleQs = [
   "what can you do for me?",
   "what kinds of questions can you solve?",
   // Technical ones
-  "Show total sales amount by gender.",
+  "Show total sales amount by gender with pie chart.",
   "Break down gift income share by region (top 5 regions).",
   "Compare average views per livestream across different regions. (top 5)",
   "Trend of total danmaku count by video count buckets",
   "For each gender, show average follower count and average gift income.",
   "Average views male vs female",
-  "Who has the best sale amount. (top 5)",
+  "Who has the best sale amount with pie chart. (top 5)",
 ];
 
 export const columns: [string, string][] = [

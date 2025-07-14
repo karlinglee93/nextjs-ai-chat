@@ -3,16 +3,29 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@ai-sdk/react";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { BarChart, LineChart, PieChart } from "@mui/x-charts";
 
 import { appConfig } from "@/lib/config";
 
 export function Chat() {
+  const [curAssistantMessage, setCurAssistantMessage] = useState<null | {
+    reasoning: string;
+    sql: string | null;
+    data: string;
+    interpret: string;
+    chartType: "bar" | "line" | "pie" | null;
+    formattedData: any;
+  }>(null);
+
   const { messages, input, handleInputChange, handleSubmit, setInput } =
     useChat({
       api: "api/chat",
       onError: (e) => {
         console.log(e);
+      },
+      onFinish: (message) => {
+        setCurAssistantMessage(JSON.parse(message.content));
       },
     });
   const chatParent = useRef<HTMLUListElement>(null);
@@ -39,6 +52,10 @@ export function Chat() {
       window.removeEventListener("send-chat", listener);
     };
   }, [handleSubmit, setInput]);
+
+  // console.log(messages.length);
+  console.log(curAssistantMessage && curAssistantMessage.chartType);
+  console.log(curAssistantMessage && curAssistantMessage.formattedData);
 
   return (
     <main className="flex flex-col w-full h-screen max-h-dvh bg-background">
@@ -89,6 +106,49 @@ export function Chat() {
               )}
             </>
           ))}
+          {curAssistantMessage && (
+            <div>
+              <p>Reasoning: {curAssistantMessage.reasoning}</p>
+              <p>SQL: {curAssistantMessage.sql}</p>
+              <p>Data: {JSON.stringify(curAssistantMessage.data)}</p>
+              <p>Interpret: {curAssistantMessage.interpret}</p>
+              <p>Chart Type: {curAssistantMessage.chartType}</p>
+              <p>
+                Chart Data: {JSON.stringify(curAssistantMessage.formattedData)}
+              </p>
+              {curAssistantMessage.chartType === "bar" && (
+                <BarChart
+                  xAxis={[
+                    { data: curAssistantMessage.formattedData.xAxis[0].data },
+                  ]}
+                  series={[
+                    { data: curAssistantMessage.formattedData.series[0].data },
+                  ]}
+                  height={300}
+                />
+              )}
+              {curAssistantMessage.chartType === "line" && (
+                <LineChart
+                  xAxis={[
+                    { data: curAssistantMessage.formattedData.xAxis[0].data },
+                  ]}
+                  series={[
+                    {
+                      data: curAssistantMessage.formattedData.series[0].data,
+                    },
+                  ]}
+                  height={300}
+                />
+              )}
+              {curAssistantMessage.chartType === "pie" && (
+                <PieChart
+                  series={[{ data: curAssistantMessage.formattedData.data }]}
+                  width={200}
+                  height={200}
+                />
+              )}
+            </div>
+          )}
         </ul>
       </section>
     </main>
