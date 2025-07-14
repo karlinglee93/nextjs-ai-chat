@@ -73,7 +73,7 @@ export function Chat() {
       <section className="flex-1 overflow-y-auto">
         <ul
           ref={chatParent}
-          className="flex flex-col gap-4 p-4 max-w-3xl mx-auto"
+          className="flex flex-col gap-4 p-2 max-w-[1000px] mx-auto"
         >
           {messages.map((m, i) =>
             m.role === "user" ? (
