@@ -11,11 +11,12 @@ import {
   ListItem,
   Chip,
   Box,
+  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { columns, sampleQs } from "@/lib/config";
 
-const drawerWidth = 380;
+const drawerWidth = 320;
 
 export default function ChatSideDrawer() {
   return (
@@ -28,6 +29,7 @@ export default function ChatSideDrawer() {
           width: drawerWidth,
           boxSizing: "border-box",
           p: 2,
+          bgcolor: "#f7f7f8",
         },
       }}
     >
@@ -41,16 +43,19 @@ export default function ChatSideDrawer() {
       </Typography>
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
         {sampleQs.map((q) => (
-          <Chip
-            key={q}
-            label={q}
-            clickable
-            size="small"
-            variant="outlined"
-            onClick={() =>
-              window.dispatchEvent(new CustomEvent("send-chat", { detail: q }))
-            }
-          />
+          <Tooltip key={q} title={q} placement="top" arrow>
+            <Chip
+              label={q}
+              clickable
+              size="small"
+              variant="outlined"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("send-chat", { detail: q })
+                )
+              }
+            />
+          </Tooltip>
         ))}
       </Box>
 

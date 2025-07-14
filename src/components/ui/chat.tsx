@@ -1,15 +1,15 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useChat } from "@ai-sdk/react";
 import { useRef, useEffect, useState } from "react";
 import { BarChart, LineChart, PieChart } from "@mui/x-charts";
 
 import { appConfig } from "@/lib/config";
-import UserBubble from "./user_bubble";
-import { Assistant } from "next/font/google";
-import AssistantBubble from "./assistant_bubble";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import UserBubble from "@/components/ui/bubble_user";
+import AssistantBubble from "@/components/ui/bubble_assistant";
 
 export function Chat() {
   const [curAssistantMessage, setCurAssistantMessage] = useState<null | {
@@ -61,43 +61,27 @@ export function Chat() {
   console.log(curAssistantMessage && curAssistantMessage.formattedData);
 
   return (
-    <main className="flex flex-col w-full h-screen max-h-dvh bg-background">
-      <header className="p-4 border-b w-full max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold">{appConfig.title}</h1>
+    <main className="flex flex-col h-screen bg-background">
+      <header className="sticky top-0 z-10 w-full bg-white/90 backdrop-blur border-b border-gray-200">
+        <div className="flex items-center px-4 py-3 max-w-7xl mx-auto">
+          <h1 className="text-lg font-medium text-gray-800">
+            {appConfig.title}
+          </h1>
+        </div>
       </header>
 
-      <section className="p-4">
-        <form
-          onSubmit={handleSubmit}
-          className="flex w-full max-w-3xl mx-auto items-center"
-        >
-          <Input
-            className="flex-1 min-h-[40px]"
-            placeholder="Type your question here..."
-            type="text"
-            value={input}
-            onChange={handleInputChange}
-          />
-          <Button className="ml-2" type="submit">
-            Submit
-          </Button>
-        </form>
-      </section>
-
-      <section className="container px-0 pb-10 flex flex-col flex-grow gap-4 mx-auto max-w-3xl">
+      <section className="flex-1 overflow-y-auto">
         <ul
           ref={chatParent}
-          className="h-1 p-4 flex-grow bg-muted/50 rounded-lg overflow-y-auto flex flex-col gap-4"
+          className="flex flex-col gap-4 p-4 max-w-3xl mx-auto"
         >
-          {messages.map((m, index) => (
-            <>
-              {m.role === "user" ? (
-                <UserBubble text={m.content as string} />
-              ) : (
-                <AssistantBubble text={m.content as string} />
-              )}
-            </>
-          ))}
+          {messages.map((m, i) =>
+            m.role === "user" ? (
+              <UserBubble key={i} text={m.content as string} />
+            ) : (
+              <AssistantBubble key={i} text={m.content as string} />
+            )
+          )}
           {curAssistantMessage && (
             <div>
               <p>Reasoning: {curAssistantMessage.reasoning}</p>
@@ -151,6 +135,27 @@ export function Chat() {
           )}
         </ul>
       </section>
+
+      <form
+        onSubmit={handleSubmit}
+        className="sticky bottom-0 bg-background border-t w-full"
+      >
+        <div className="max-w-3xl mx-auto flex items-center p-4">
+          <Input
+            className="flex-1 min-h-[40px] rounded-lg px-4 py-2 text-sm border border-gray-300 bg-[#f7f7f8] shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Send a message..."
+            value={input}
+            onChange={handleInputChange}
+          />
+          <Button
+            className="ml-2 px-4 py-2 rounded-xl text-sm"
+            type="submit"
+            disabled={!input.trim()}
+          >
+            Send
+          </Button>
+        </div>
+      </form>
     </main>
   );
 }

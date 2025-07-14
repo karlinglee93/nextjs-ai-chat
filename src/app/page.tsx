@@ -1,8 +1,8 @@
 "use client";
 
 import { Box } from "@mui/material";
-import ChatSideDrawer from "@/app/components/drawer";
-import { Chat } from "@/app/components/chat";
+import ChatSideDrawer from "@/components/ui/drawer";
+import { Chat } from "@/components/ui/chat";
 
 export const runtime = "edge";
 
