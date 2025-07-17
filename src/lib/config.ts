@@ -13,7 +13,7 @@ export const sampleQs = [
   "Show total sales amount by gender with pie chart.",
   "Break down gift income share by region (top 5 regions).",
   "Compare average views per livestream across different regions. (top 5)",
-  "Trend of total danmaku count by video count buckets",
+  "Trend of total danmaku count by video count buckets (list top 10)",
   "For each gender, show average follower count and average gift income.",
   "Average views male vs female",
   "Who has the best sale amount with pie chart. (top 5)",
