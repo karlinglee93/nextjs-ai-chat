@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import UserBubble from "@/components/ui/bubble_user";
 import AssistantBubble from "@/components/ui/bubble_assistant";
+import Image from "next/image";
 
 export function Chat() {
   const { messages, input, handleInputChange, handleSubmit, setInput, status } =
@@ -55,26 +56,39 @@ export function Chat() {
       </header>
 
       <section className="flex-1 overflow-y-auto">
-        <ul
-          ref={chatParent}
-          className="flex flex-col space-y-2 px-4 py-2 max-w-[1000px] mx-auto overflow-y-auto"
-        >
-          {messages.map((m, i) => {
-            const isLast = i === messages.length - 1;
-            const streaming =
-              isLast && m.role === "assistant" && status === "streaming";
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <Image
+              src="/chatbot.jpg"
+              width={64}
+              height={64}
+              className="w-64 h-auto"
+              alt="Welcome Chat"
+            />
+            <p className="mt-4 text-gray-500">Start your conversation here</p>
+          </div>
+        ) : (
+          <ul
+            ref={chatParent}
+            className="flex flex-col space-y-2 px-4 py-2 max-w-[1000px] mx-auto overflow-y-auto"
+          >
+            {messages.map((m, i) => {
+              const isLast = i === messages.length - 1;
+              const streaming =
+                isLast && m.role === "assistant" && status === "streaming";
 
-            return m.role === "user" ? (
-              <UserBubble key={i} text={m.content as string} />
-            ) : (
-              <AssistantBubble
-                key={i}
-                content={m.content as string}
-                streaming={streaming}
-              />
-            );
-          })}
-        </ul>
+              return m.role === "user" ? (
+                <UserBubble key={i} text={m.content as string} />
+              ) : (
+                <AssistantBubble
+                  key={i}
+                  content={m.content as string}
+                  streaming={streaming}
+                />
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <form

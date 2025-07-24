@@ -1,6 +1,6 @@
 export const appConfig = {
-  title: "Glu: TikTok Sales Assistant",
-  assistantName: "Glu",
+  title: "NORA: TikTok Sales Assistant",
+  assistantName: "NORA",
   themeColor: "#8A2BE2",
   model: "gpt-4.1-nano",
 };
