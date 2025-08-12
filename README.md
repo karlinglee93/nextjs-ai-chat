@@ -1,50 +1,147 @@
-# Next.js AI Chat
----
+# nextjs-ai-chat
 
-### Author Links
+A **Conversational AI Assistant for Visualising Business Data Analytics** built with **Next.js**, **Material UI**, **Supabase (PostgresSQL)**, **ai-sdk**, and the **OpenAI API**.  
+It lets non-technical users explore and visualise business data via **natural language queries**, using custom LLM agents for **SQL generation**, **RAG (Retrieval-Augmented Generation)**, and **real-time charts** with AI-generated insights.
 
-👋 Hello, I'm Dave Gray.
-
-📚 [My Courses](https://courses.davegray.codes/)
-
-✅ [Check out my YouTube Channel with hundreds of tutorials](https://www.youtube.com/DaveGrayTeachesCode).
-
-🚩 [Subscribe to my channel](https://bit.ly/3nGHmNn)
-
-💖 [Support My Content](https://patreon.com/davegray)
-
-🚀 Follow Me:
-
-- [Twitter](https://twitter.com/yesdavidgray)
-- [LinkedIn](https://www.linkedin.com/in/davidagray/)
-- [Blog](https://davegray.codes)
+[Live Demo (Vercel Project)](https://nextjs-ai-chat-mu-ten.vercel.app)
 
 ---
 
-### Description
+## Table of Contents
 
-📺 [YouTube Video](https://youtu.be/xF-BL8XF4mg) for this repository.
-
----
-
-### ⚙ Usage
-
-- Provide your own .env.local file with an OpenAI API key
-- npm install
-- npm run dev
-
----
-
-### 🎓 Academic Honesty
-
-**DO NOT COPY FOR AN ASSIGNMENT** - Avoid plagiarism and adhere to the spirit of this [Academic Honesty Policy](https://www.freecodecamp.org/news/academic-honesty-policy/).
+- [Features](#features)  
+- [Tech Stack](#tech-stack)  
+- [Architecture Overview](#architecture-overview)  
+- [Demo](#demo)  
+- [Getting Started](#getting-started)  
+- [Example Usage](#example-usage)  
+- [Roadmap](#roadmap)  
+- [Security Notes](#security-notes)  
+- [License](#license)
 
 ---
 
-### 📚 Tutorial References
+## Features
 
-- 🔗 [Next.js](https://nextjs.org/)
-- 🔗 [Vercel AI SDK](https://sdk.vercel.ai/docs)
-- 🔗 [OpenAI](https://openai.com/)
-- 🔗 [shadcn/ui](https://ui.shadcn.com/)
-- 🔗 [Next.js Light & Dark Modes](https://www.davegray.codes/posts/light-dark-mode-nextjs-app-router-tailwind)
+- **Natural Language → SQL**: Automatically converts user questions into SQL queries.  
+- **RAG-Enhanced Answers**: Retrieves relevant context to improve accuracy and grounding.  
+- **Interactive Visualisations**: Renders charts from query results in real time.  
+- **AI Insights**: Summarises findings next to the visuals for quick interpretation.  
+- **Production-Friendly Stack**: Next.js app routes, MUI components, ai-sdk orchestration, Supabase (PostgreSQL).  
+- **Real Dataset**: Built and tested on a TikTok sales dataset to reflect real business scenarios.
+
+---
+
+## Tech Stack
+
+| Layer      | Technology |
+|-----------|------------|
+| Frontend  | Next.js, Material UI |
+| AI/LLM    | ai-sdk, OpenAI API |
+| Backend   | Next.js API Routes, Node.js v22.8.0 |
+| Database  | Supabase (PostgreSQL) |
+| Deploy    | Vercel |
+
+---
+
+## Architecture Overview
+
+![Demo GIF](public/architecture_design.png)
+
+![Demo GIF](public/agent_design.png)
+
+---
+
+## Demo
+
+**Live Demo:** [Open Vercel project](https://nextjs-ai-chat-mu-ten.vercel.app)  
+**Animated Preview:**
+
+![Demo GIF](public/demo.gif)
+
+---
+
+## Getting Started
+
+### 1) Clone the repository
+
+```bash
+git clone https://github.com/karlinglee93/nextjs-ai-chat.git
+cd nextjs-ai-chat
+```
+
+### 2) Install dependencies
+
+```bash
+npm install
+```
+
+### 3) Configure environment variables
+
+Create a `.env.local` file in the project root:
+
+```env
+# Generative AI
+OPENAI_API_KEY=your_openai_api_key
+
+# Supabase / PostgreSQL
+POSTGRES_URL="your_postgres_url"
+POSTGRES_USER="your_postgres_user"
+POSTGRES_HOST="your_postgres_host"
+SUPABASE_JWT_SECRET="your_supabase_jwt_secret"
+POSTGRES_PRISMA_URL="your_postgres_prisma_url"
+POSTGRES_PASSWORD="your_postgres_password"
+POSTGRES_DATABASE="your_postgres_database"
+SUPABASE_URL="your_supabase_url"
+NEXT_PUBLIC_SUPABASE_URL="your_supabase_url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
+SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_role_key"
+POSTGRES_URL_NON_POOLING="your_postgres_url_non_pooling"
+```
+
+> ⚠ **Security Tip:** Never commit real keys or database credentials to GitHub.
+
+### 4) Run the development server
+
+```bash
+npm run dev
+```
+
+Open your browser at `http://localhost:3000`.
+
+---
+
+## Example Usage
+
+1. Enter a query, for example:
+   ```
+   Show me the top 10 products by sales in Q2
+   ```
+2. The system will:
+   - Convert the query into an SQL statement  
+   - Fetch relevant data from Supabase  
+   - Render an interactive chart  
+   - Provide an AI-generated summary of insights
+
+---
+
+## Roadmap
+
+- [ ] Implement authentication and user-specific dashboards  
+- [ ] Enable support for multiple datasets  
+- [ ] Add export options for visualisations (PNG/PDF)  
+- [ ] Implement drill-down analytics and advanced filters  
+
+---
+
+## Security Notes
+
+- Store API keys and database credentials securely in `.env.local`  
+- Use least-privilege database roles in production  
+- Enable Row-Level Security (RLS) in Supabase for restricted access  
+
+---
+
+## License
+
+This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
