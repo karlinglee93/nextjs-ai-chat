@@ -12,7 +12,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function seed() {
+async function seedEmbeddings() {
   try {
     while (true) {
       const { data: rows, error: selError } = await supabase
@@ -55,4 +55,21 @@ async function seed() {
   }
 }
 
-seed();
+async function testEmbedding() {
+  const question = "Japanese daily life vlogger who speaks Chinese";
+  const { embedding } = await embed({
+    model: openai.textEmbeddingModel("text-embedding-3-small"),
+    value: question,
+  });
+
+  const { data: documents } = await supabase.rpc("match_documents", {
+    query_embedding: embedding, // Pass the embedding you want to compare
+    match_threshold: 0.5, // Choose an appropriate threshold for your data
+    match_count: 10, // Choose the number of matches
+  });
+
+  console.log(documents);
+}
+
+// seedEmbeddings();
+testEmbedding();
