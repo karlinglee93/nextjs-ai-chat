@@ -179,7 +179,7 @@ export async function POST(req: Request) {
 
     // Debug Supabase Database Results
     console.debug("⌛️ DEBUGING Retrieved Data from Databases...");
-    console.debug(`🔧 Queried Database Results: ${queryResult.toString()}`);
+    console.debug("🔧 Queried Database Results: ", queryResult);
     console.log("✅ DEBUGING Retrieved Data Completed.");
 
     // Agent 2 - Interpret Agent

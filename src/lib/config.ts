@@ -5,19 +5,35 @@ export const appConfig = {
   model: "gpt-4.1-nano",
 };
 
-export const sampleQs = [
-  // General ones
-  "what can you do for me?",
-  "what kinds of questions can you solve?",
-  // Technical ones
-  "Show total sales amount by gender with pie chart.",
-  "Break down gift income share by region (top 5 regions).",
-  "Compare average views per livestream across different regions. (top 5)",
-  "Trend of total danmaku count by video count buckets (list top 10)",
-  "For each gender, show average follower count and average gift income.",
-  "Average views male vs female",
-  "Who has the best sale amount with pie chart. (top 5)",
-];
+export const sampleQs = {
+  general: {
+    label: "- general question sample",
+    questions: [
+      "what can you do for me?",
+      "what kinds of questions can you solve?",
+    ],
+  },
+  chart: {
+    label: "- data analytics question sample",
+    questions: [
+      // 1. bar chart
+      "For each gender, show average follower count and average gift income by bar chart.",
+      "Break down gift income share by region (top 5 regions).",
+      "Compare average views per livestream across different regions. (top 5)",
+      "Average views male vs female by bar chart",
+      // 2. line charts
+      "How does follower count change with increasing video count?",
+      "What is the trend of average views as the number of videos grows?",
+      // 3. pie chart
+      "Show total sales amount by gender with pie chart.",
+      "Who has the best sale amount with pie chart. (top 5)",
+    ],
+  },
+  vector: {
+    label: "vector-based semantic search question sample",
+    questions: [],
+  },
+};
 
 export const columns: [string, string][] = [
   ["douyin_id", "Douyin account ID"],
@@ -31,11 +47,9 @@ export const columns: [string, string][] = [
   ["average_views", "Average concurrent viewers per livestream"],
   ["total_likes", "Total number of likes"],
   ["total_danmaku_count", "Total danmaku (chat comments)"],
-  ["danmaku_user_count", "Unique users who sent danmaku"],
   ["danmaku_content", "Content of danmaku messages"],
   ["total_sales_amount", "Total sales amount during livestream (¥)"],
   ["gift_senders_count", "Number of gift senders"],
   ["gift_income", "Total income from gifts (¥)"],
-  ["top_donors", "List of top donors"],
   ["product_category", "Category of promoted product"],
 ];

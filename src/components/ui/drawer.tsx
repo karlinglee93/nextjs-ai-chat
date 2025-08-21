@@ -41,21 +41,30 @@ export default function ChatSideDrawer() {
       <Typography variant="subtitle1" gutterBottom>
         Example questions
       </Typography>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-        {sampleQs.map((q) => (
-          <Tooltip key={q} title={q} placement="top" arrow>
-            <Chip
-              label={q}
-              clickable
-              size="small"
-              variant="outlined"
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent("send-chat", { detail: q })
-                )
-              }
-            />
-          </Tooltip>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
+        {Object.values(sampleQs).map((section) => (
+          <Box key={section.label}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              {section.label}
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+              {section.questions.map((q) => (
+                <Tooltip key={q} title={q} placement="top" arrow>
+                  <Chip
+                    label={q}
+                    clickable
+                    size="small"
+                    variant="outlined"
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("send-chat", { detail: q })
+                      )
+                    }
+                  />
+                </Tooltip>
+              ))}
+            </Box>
+          </Box>
         ))}
       </Box>
 

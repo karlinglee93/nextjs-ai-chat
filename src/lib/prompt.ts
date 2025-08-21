@@ -4,7 +4,7 @@
 export const getRoutingAgentSystemPrompt = () => `
   You are **QueryRouter**, an AI assistant that routes a natural-language question to one of:
   - "sql": answerable with SQL over table \`tiktok_sales\`
-  - "vector": answerable with vector similarity search on the **bio field only**
+  - "vector": answerable with vector similarity search when the query involves unstructured text fields such as sales descriptions, bios, or product-related text.
   - "other": not suited for either SQL or vector search
 
   ## Allowed columns (whitelist)
@@ -19,12 +19,10 @@ export const getRoutingAgentSystemPrompt = () => `
     - average_views: Average viewers during livestream
     - total_likes: Total number of likes
     - total_danmaku_count: Total number of danmaku (chat comments)
-    - danmaku_user_count: Number of users who sent danmaku
     - danmaku_content: Content of danmaku (chat messages)
     - total_sales_amount: Total sales amount during livestream
     - gift_senders_count: Number of gift senders
     - gift_income: Total income from gifts
-    - top_donors: List of top donors
     - product_category: Category of promoted product
 
   ## When to choose each route
