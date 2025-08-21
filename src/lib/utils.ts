@@ -44,6 +44,10 @@ const embeddingText = async (text: string) => {
       value: text,
     });
 
+    console.debug(
+      `✅ Embeded semantic search question, length is ${embedding.length}`
+    );
+
     return embedding;
   } catch (error) {
     console.error(`❌ Failed to embed text: ${error}`);
@@ -52,7 +56,7 @@ const embeddingText = async (text: string) => {
 
 export const queryVectorEmbeddingData = async (
   semantics: string,
-  match_threshold: number = 0.5,
+  match_threshold: number = 0.2,
   match_count: number = 5
 ) => {
   try {
@@ -64,6 +68,10 @@ export const queryVectorEmbeddingData = async (
       match_threshold, // Choose an appropriate threshold for your data
       match_count, // Choose the number of matches
     });
+
+    console.debug(
+      `✅ Embeded semantic search answers, length is ${documents.length}`
+    );
 
     return documents;
   } catch (error) {

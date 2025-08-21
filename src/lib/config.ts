@@ -7,20 +7,20 @@ export const appConfig = {
 
 export const sampleQs = {
   general: {
-    label: "- general question sample",
+    label: "- general sample",
     questions: [
       "what can you do for me?",
       "what kinds of questions can you solve?",
     ],
   },
   chart: {
-    label: "- data analytics question sample",
+    label: "- data analytics & visualisation sample",
     questions: [
       // 1. bar chart
       "For each gender, show average follower count and average gift income by bar chart.",
       "Break down gift income share by region (top 5 regions).",
       "Compare average views per livestream across different regions. (top 5)",
-      "Average views male vs female by bar chart",
+      "Show average views male vs female by bar chart",
       // 2. line charts
       "How does follower count change with increasing video count?",
       "What is the trend of average views as the number of videos grows?",
@@ -30,8 +30,11 @@ export const sampleQs = {
     ],
   },
   vector: {
-    label: "vector-based semantic search question sample",
-    questions: [],
+    label: "- vector-based semantic search sample",
+    questions: [
+      "Find accounts whose background is living in Japan but speak Chinese",
+      "Find creators who mention “beauty” or “makeup tutorials” in their bios.",
+    ],
   },
 };
 

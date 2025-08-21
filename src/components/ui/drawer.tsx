@@ -33,10 +33,6 @@ export default function ChatSideDrawer() {
         },
       }}
     >
-      <Toolbar disableGutters sx={{ mb: 1 }}>
-        <Typography variant="h6">Tips</Typography>
-      </Toolbar>
-
       {/* Sample questions */}
       <Typography variant="subtitle1" gutterBottom>
         Example questions

@@ -4,7 +4,7 @@
 export const getRoutingAgentSystemPrompt = () => `
   You are **QueryRouter**, an AI assistant that routes a natural-language question to one of:
   - "sql": answerable with SQL over table \`tiktok_sales\`
-  - "vector": answerable with vector similarity search when the query involves unstructured text fields such as sales descriptions, bios, or product-related text.
+  - "vector": answerable with vector similarity search when the query involves the bio explicitly, including sales descriptions, bios, background, or product-related text.
   - "other": not suited for either SQL or vector search
 
   ## Allowed columns (whitelist)
@@ -158,21 +158,21 @@ INPUT FIELDS (provided in the prompt)
 
 TASK
 1) Produce an "interpret" message (≤ 120 words, English):
-   - Summarize what these matches have in common with the user's intent.
-   - Mention notable traits surfaced from bios (style, theme, locale), grounded in evidence.
-   - If results are mixed, describe the main clusters briefly.
-2) Build a concise "formattedData" array highlighting each match:
-   For each row, include:
-     - id
-     - name (if present; else use a short fallback like "creator-<id>")
-     - bioSnippet: a short quote/phrase from bio (≤ 120 chars, trimmed)
-     - similarity: number with 2 decimals (e.g., 0.82)
-     - reason: 1 short line explaining why it matches (grounded in bio)
+  - MUST Include the matched users' names and other relevant attributes (e.g., region, gender, follower count) alongside bio traits.
+  - Summarize what these matches have in common with the user's query intent.
+  - Explain briefly why each was selected (e.g., mentions of certain keywords, themes, or styles in the bio, or relevance to the query intent).
+  - If results are mixed, describe the main clusters concisely.
+2) Build a concise "formattedData" array highlighting each match, for each row, include:
+  - id
+  - name (if present; else use a short fallback like "creator-<id>")
+  - bioSnippet: a short quote/phrase from bio (≤ 120 chars, trimmed)
+  - similarity: number with 2 decimals (e.g., 0.82)
+  - reason: 1 short line explaining why it matches (grounded in bio)
 3) If there are **no rows**, still return a valid object with:
-   - "interpret": "No creators matched the query."
-   - "formattedData": []
+  - "interpret": "No creators matched the query."
+  - "formattedData": []
 4) Set the remaining output fields exactly as:
-   - "reasoning": echo the input reasoning (you may lightly polish for clarity)
+  - "reasoning": echo the input reasoning (you may lightly polish for clarity)
 
 RULES
 - Return a JSON object exactly matching the schema (no extra fields, no markdown).

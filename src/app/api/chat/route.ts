@@ -106,6 +106,7 @@ const proceedRoutingAgent = async (
       model,
       temperature: 0,
       schema: getRoutingAgentSchema(),
+      // output: "no-schema",
       system: getRoutingAgentSystemPrompt(),
       prompt: `
         User question:
