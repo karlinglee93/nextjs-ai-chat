@@ -4,42 +4,30 @@ import { z } from "zod";
  * Agent1 - Routing Agent
  */
 export const getRoutingAgentSchema = () =>
-  z.union([
-    z.object({
-      mode: z.literal("sql"),
-      reasoning: z
-        .string()
-        .describe(
-          "Provide a concise natural-language explanation of why the query can be answered using SQL, including the reasoning process used to make this determination."
-        ),
-      sql: z.string().nullable().describe("PostgreSQL query string"),
-      chartType: z
-        .enum(["line", "bar", "pie", "auto"])
-        .default(null)
-        .describe(
-          `Desired chart type.
+  z.object({
+    mode: z.enum(["sql", "vector", "other"]),
+    reasoning: z.string().describe(`
+      If mode = sql, explain why SQL can answer the query.
+      If mode = vector, explain why a vector similarity search can answer the query.
+      If mode = other, explain why neither SQL nor vector similarity search can answer the query.
+      Always include the reasoning process used to make this determination.
+    `),
+    sql: z.string().nullable().optional().describe("PostgreSQL query string"),
+    chartType: z
+      .enum(["line", "bar", "pie", null])
+      .default(null)
+      .optional()
+      .describe(
+        `Desired chart type.
           • If the user's input explicitly requests "line", "bar", or "pie", return that value.  
-          • Otherwise return "auto".`
-        ),
-    }),
-    z.object({
-      mode: z.literal("vector"),
-      reasoning: z
-        .string()
-        .describe(
-          "Provide a concise natural-language explanation of why the query can be answered using a vector similarity search, including the reasoning process used to make this determination."
-        ),
-      semanticQuery: z.string().nullable().describe("Semantic query content"),
-    }),
-    z.object({
-      mode: z.literal("other"),
-      reasoning: z
-        .string()
-        .describe(
-          "Provide a concise natural-language explanation of why the query cannot be answered by SQL or vector similarity search, and describe the reasoning process used to reach this conclusion."
-        ),
-    }),
-  ]);
+          • Otherwise return null.`
+      ),
+    semanticQuery: z
+      .string()
+      .nullable()
+      .optional()
+      .describe("Semantic query content"),
+  });
 
 /*
  * Agent2 - Interpret Agent

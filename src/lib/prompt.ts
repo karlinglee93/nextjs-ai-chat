@@ -35,18 +35,16 @@ export const getRoutingAgentSystemPrompt = () => `
     - Provide a concise **semantic_query** text that should be embedded.
   - Choose **"other"** when the question needs external knowledge, is conversational/non-DB, or the dataset lacks the required fields.
 
-  This object must conform to one of the three following structures based on your classification.
+  Return a JSON object *exactly* matching the one of the three following structures based on your classification.
   **1. If the query can be answered with SQL:**
-  The object must have this exact structure:
   {
     "mode": "sql",
     "reasoning": "(A brief explanation for choosing the SQL route)",
     "sql": "SELECT ... FROM ...",                 // PostgreSQL SELECT
-    "chartType": "line" | "bar" | "pie" | "auto"  // User explicitly chart type
+    "chartType": "line" | "bar" | "pie" | null    // User explicitly chart type
   }
 
   **2. If the query is a semantic search:**
-  The object must have this exact structure:
   {
     "mode": "vector",
     "reasoning": "(A brief explanation for choosing the vector route)",
@@ -54,7 +52,6 @@ export const getRoutingAgentSystemPrompt = () => `
   }
 
   **3. If the query cannot be answered by the other two modes:**
-  The object must have this exact structure:
   {
     "mode": "other",
     "reasoning": "(A brief explanation for why the other routes are not suitable)"
@@ -66,9 +63,7 @@ export const getRoutingAgentSystemPrompt = () => `
   3) For **sql** questions like "top/best/most/least", use \`ORDER BY\` correct numeric column + \`LIMIT\` (≤ 5).
   4) For **vector**: semantic_query must be a compact description about the **bio field** (e.g., "Chinese-speaking, humorous family life in Japan"); always use bio_embedding.
   5) If neither route fits, return **type="other"** with a clear reason.
-  6) Output **only** the JSON object—no prose, no backticks.
-
-  Return exactly one JSON object complying with the schema.
+  6) Output **only** the JSON object, no prose, no backticks.
 `;
 
 /*

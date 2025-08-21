@@ -1,16 +1,17 @@
 import { RoutingAgentResult, RoutingType } from "./definition";
 
 export const debugRoutingAgent = (routingAgentResult: RoutingAgentResult) => {
-  console.log(`Routing Agent Results:`);
-  console.log(`Reasoning: ${routingAgentResult.reasoning}`);
-  console.log(`Mode: ${routingAgentResult.mode}`);
+  console.debug(`🔧 Routing Agent Results:`);
+  console.debug("🔧 Raw Response: ", routingAgentResult);
+  console.debug(`🔧 Reasoning: ${routingAgentResult.reasoning}`);
+  console.debug(`🔧 Mode: ${routingAgentResult.mode}`);
   switch (routingAgentResult.mode) {
     case RoutingType.SQL:
-      console.log(`SQL: ${routingAgentResult.sql}`);
-      console.log(`Desired Chart Type: ${routingAgentResult.chartType}`);
+      console.debug(`🔧 SQL: ${routingAgentResult.sql}`);
+      console.debug(`🔧 Desired Chart Type: ${routingAgentResult.chartType}`);
       break;
     case RoutingType.VECTOR:
-      console.log(`Sematic Query: ${routingAgentResult.semanticQuery}`);
+      console.debug(`🔧 Sematic Query: ${routingAgentResult.semanticQuery}`);
       break;
     case RoutingType.OTHER:
       break;

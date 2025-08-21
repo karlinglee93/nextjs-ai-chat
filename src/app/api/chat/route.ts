@@ -32,13 +32,19 @@ setupGlobalProxy();
 const getQueryResult = async (
   routingAgentResult: RoutingAgentResult
 ): Promise<string[]> => {
-  switch (routingAgentResult.mode) {
-    case RoutingType.SQL:
-      return await queryStructuredData(routingAgentResult.sql!);
-    case RoutingType.VECTOR:
-      return await queryVectorEmbeddingData(routingAgentResult.semanticQuery!);
-    default:
-      return [];
+  try {
+    switch (routingAgentResult.mode) {
+      case RoutingType.SQL:
+        return await queryStructuredData(routingAgentResult.sql!);
+      case RoutingType.VECTOR:
+        return await queryVectorEmbeddingData(
+          routingAgentResult.semanticQuery!
+        );
+      default:
+        return [];
+    }
+  } catch (error) {
+    throw new Error(`❌ Failed to query database result: ${error}`);
   }
 };
 
@@ -90,7 +96,7 @@ const getInterpretAgentSchema = (mode: RoutingTypeValue) => {
   }
 };
 
-const processRoutingAgent = async (
+const proceedRoutingAgent = async (
   model: LanguageModelV1,
   currentMessageContent: string,
   formattedPreviousMessages: string
@@ -118,35 +124,12 @@ const processRoutingAgent = async (
   }
 };
 
-export async function POST(req: Request) {
+const proceedInterpretAgent = async (
+  model: LanguageModelV1,
+  routingAgentResult: RoutingAgentResult,
+  queryResult: string[]
+) => {
   try {
-    const { messages } = await req.json();
-    const formattedPreviousMessages = messages
-      .slice(0, -1)
-      .map(formatMessage)
-      .join("\n");
-    const currentMessageContent = messages[messages.length - 1].content;
-
-    const model = openai(appConfig.model);
-
-    // Agent 1 - Routing Agent
-    const routingAgentResult = await processRoutingAgent(
-      model,
-      currentMessageContent,
-      formattedPreviousMessages
-    );
-
-    // Debug Routing Agent
-    console.log("✅ DEBUGING...");
-    debugRoutingAgent(routingAgentResult);
-
-    const queryResult = await getQueryResult(routingAgentResult);
-
-    // Debug Supabase Database Results
-    console.info("DEBUGING...");
-    console.log(`Database Results: ${queryResult.toString()}`);
-
-    // Agent 2 - Interpret Agent
     const interpretAgentResult = streamText({
       model,
       temperature: 0,
@@ -160,6 +143,51 @@ export async function POST(req: Request) {
       }[routingAgentResult.mode],
       prompt: getInterpretAgentPrompt(routingAgentResult, queryResult),
     });
+
+    console.debug("✅ Proceed Intrepret Agent Completed.");
+
+    return interpretAgentResult;
+  } catch (error) {
+    throw new Error(`❌ Failed to Process Interpret Agent: ${error}`);
+  }
+};
+
+export async function POST(req: Request) {
+  try {
+    const { messages } = await req.json();
+    const formattedPreviousMessages = messages
+      .slice(0, -1)
+      .map(formatMessage)
+      .join("\n");
+    const currentMessageContent = messages[messages.length - 1].content;
+
+    const model = openai(appConfig.model);
+
+    // Agent 1 - Routing Agent
+    const routingAgentResult = await proceedRoutingAgent(
+      model,
+      currentMessageContent,
+      formattedPreviousMessages
+    );
+
+    // Debug Routing Agent
+    console.log("⌛️ DEBUGING Routing Agent...");
+    debugRoutingAgent(routingAgentResult);
+    console.log("✅ DEBUGING Routing Agent Completed.");
+
+    const queryResult = await getQueryResult(routingAgentResult);
+
+    // Debug Supabase Database Results
+    console.debug("⌛️ DEBUGING Retrieved Data from Databases...");
+    console.debug(`🔧 Queried Database Results: ${queryResult.toString()}`);
+    console.log("✅ DEBUGING Retrieved Data Completed.");
+
+    // Agent 2 - Interpret Agent
+    const interpretAgentResult = await proceedInterpretAgent(
+      model,
+      routingAgentResult,
+      queryResult
+    );
 
     return interpretAgentResult.toDataStreamResponse();
   } catch (error) {

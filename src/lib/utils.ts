@@ -15,10 +15,14 @@ export const formatMessage = (message: VercelChatMessage) => {
 };
 
 export const queryStructuredData = async (sql: string) => {
-  const client = await db.connect();
-  const res = await client.query(sql);
-  client.release();
-  return res.rows;
+  try {
+    const client = await db.connect();
+    const res = await client.query(sql);
+    client.release();
+    return res.rows;
+  } catch (error) {
+    console.error(`❌ Failed to query structured data: ${error}`);
+  }
 };
 
 const createSupabaseClient = () => {
