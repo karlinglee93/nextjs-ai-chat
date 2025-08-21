@@ -1,8 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useRef, useEffect, useState } from "react";
-import { BarChart, LineChart, PieChart } from "@mui/x-charts";
+import { useRef, useEffect } from "react";
 
 import { appConfig } from "@/lib/config";
 

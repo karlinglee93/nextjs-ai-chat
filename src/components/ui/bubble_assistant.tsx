@@ -12,15 +12,7 @@ import { BarChart, LineChart, PieChart } from "@mui/x-charts";
 import { useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-
-type AssistantData = {
-  reasoning?: string;
-  sql?: string | null;
-  data?: any;
-  interpret?: string;
-  chartType?: "bar" | "line" | "pie" | null;
-  formattedData?: any;
-};
+import { AssistantData } from "@/lib/definition";
 
 export default function AssistantBubble({
   content,

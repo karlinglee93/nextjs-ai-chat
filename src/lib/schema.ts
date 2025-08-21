@@ -1,38 +1,48 @@
 import { z } from "zod";
 
 /*
- * Agent1
+ * Agent1 - Routing Agent
  */
-export const getAgent1Schema = () =>
-  z.object({
-    reasoning: z
-      .string()
-      .describe(
-        "short natural-language explanation of how the AI thinks about the user's question, including its logic for deciding whether a SQL query can answer it. This should reflect the AI's thought process"
-      ),
-    type: z.enum(["general", "technical"]).describe(
-      `"technical" if the question can be answered with a SQL query; 
-       "general" if it's a broader or open-ended question not suitable for SQL
-      `
-    ),
-    sql: z
-      .string()
-      .nullable()
-      .describe(
-        "PostgreSQL query string if type is 'technical', otherwise null"
-      ),
-    chartType: z
-      .enum(["line", "bar", "pie", "auto"])
-      .default("auto")
-      .describe(
-        `Desired chart type.
-       • If the user's input explicitly requests "line", "bar", or "pie", return that value.  
-       • Otherwise return "auto" (the downstream agent decides).`
-      ),
-  });
+export const getRoutingAgentSchema = () =>
+  z.union([
+    z.object({
+      mode: z.literal("sql"),
+      reasoning: z
+        .string()
+        .describe(
+          "Provide a concise natural-language explanation of why the query can be answered using SQL, including the reasoning process used to make this determination."
+        ),
+      sql: z.string().nullable().describe("PostgreSQL query string"),
+      chartType: z
+        .enum(["line", "bar", "pie", "auto"])
+        .default(null)
+        .describe(
+          `Desired chart type.
+          • If the user's input explicitly requests "line", "bar", or "pie", return that value.  
+          • Otherwise return "auto".`
+        ),
+    }),
+    z.object({
+      mode: z.literal("vector"),
+      reasoning: z
+        .string()
+        .describe(
+          "Provide a concise natural-language explanation of why the query can be answered using a vector similarity search, including the reasoning process used to make this determination."
+        ),
+      semanticQuery: z.string().nullable().describe("Semantic query content"),
+    }),
+    z.object({
+      mode: z.literal("other"),
+      reasoning: z
+        .string()
+        .describe(
+          "Provide a concise natural-language explanation of why the query cannot be answered by SQL or vector similarity search, and describe the reasoning process used to reach this conclusion."
+        ),
+    }),
+  ]);
 
 /*
- * Agent2
+ * Agent2 - Interpret Agent
  */
 // Bar chart format
 const barFormat = z.object({
@@ -58,7 +68,7 @@ const pieFormat = z.object({
 });
 
 // Master schema
-export const getAgent2Schema = () =>
+export const getChartAgentSchema = () =>
   z.object({
     reasoning: z.string().describe("same as input reasoning"),
     sql: z.string().nullable().describe("same as input sql"),
@@ -78,4 +88,27 @@ export const getAgent2Schema = () =>
           "If pie  -> { data:[{ id, value, label }] }",
         ].join("\n")
       ),
+  });
+
+export const getVectorAgentSchema = () =>
+  z.object({
+    reasoning: z.string().describe("same as input reasoning"),
+    formattedData: z
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          bioSnippet: z.string().max(120),
+          similarity: z.number().describe("similarity score, e.g., 0.82"),
+          reason: z.string().describe("short explanation grounded in bio"),
+        })
+      )
+      .describe("derived from input data"),
+    interpret: z.string().describe("short insight about the data (≤120 words)"),
+  });
+
+export const getGeneralAgentSchema = () =>
+  z.object({
+    reasoning: z.string().describe("same as input reasoning"),
+    interpret: z.string().describe("short insight about the data (≤120 words)"),
   });

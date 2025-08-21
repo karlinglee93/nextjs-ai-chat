@@ -1,34 +1,106 @@
-import { generateObject, Output, streamText } from "ai";
+import { generateObject, LanguageModelV1, Output, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
 import { appConfig } from "@/lib/config";
-import { formatMessage, queryDb } from "@/lib/utils";
-import { getAgent1Schema, getAgent2Schema } from "@/lib/schema";
+import {
+  formatMessage,
+  queryStructuredData,
+  queryVectorEmbeddingData,
+} from "@/lib/utils";
+import {
+  getRoutingAgentSchema,
+  getChartAgentSchema,
+  getVectorAgentSchema,
+  getGeneralAgentSchema,
+} from "@/lib/schema";
 import { setupGlobalProxy } from "@/lib/proxy";
 import {
-  getAgent1SystemPrompt,
-  getAgent2GeneralSystemPrompt,
-  getAgent2TechnicalSystemPrompt,
+  getRoutingAgentSystemPrompt,
+  getGeneralAgentSystemPrompt,
+  getChartAgentSystemPrompt,
+  getVectorAgentSystemPrompt,
 } from "@/lib/prompt";
+import {
+  RoutingAgentResult,
+  RoutingType,
+  RoutingTypeValue,
+} from "@/lib/definition";
+import { debugRoutingAgent } from "@/lib/debug";
 
 setupGlobalProxy();
 
-export async function POST(req: Request) {
-  try {
-    const { messages } = await req.json();
-    const formattedPreviousMessages = messages
-      .slice(0, -1)
-      .map(formatMessage)
-      .join("\n");
-    const currentMessageContent = messages[messages.length - 1].content;
+const getQueryResult = async (
+  routingAgentResult: RoutingAgentResult
+): Promise<string[]> => {
+  switch (routingAgentResult.mode) {
+    case RoutingType.SQL:
+      return await queryStructuredData(routingAgentResult.sql!);
+    case RoutingType.VECTOR:
+      return await queryVectorEmbeddingData(routingAgentResult.semanticQuery!);
+    default:
+      return [];
+  }
+};
 
-    const model = openai(appConfig.model);
-    // Agent 1 - SQL agent
-    const { object: agent1Result } = await generateObject({
+const getInterpretAgentPrompt = (
+  routingAgentResult: RoutingAgentResult,
+  queryResult: string[]
+) => {
+  switch (routingAgentResult.mode) {
+    case RoutingType.SQL:
+      return `
+          reasoning: ${routingAgentResult.reasoning}
+          sql: ${routingAgentResult.sql}
+          data: ${JSON.stringify(queryResult)}
+          chartType: ${routingAgentResult.chartType}
+
+          Respond with the required JSON only.
+        `;
+    case RoutingType.VECTOR:
+      return `
+          reasoning: ${routingAgentResult.reasoning}
+          data: ${JSON.stringify(queryResult)}
+
+          Respond with the required JSON only.
+        `;
+    case RoutingType.OTHER:
+      return `
+          reasoning: ${routingAgentResult.reasoning}
+
+          Respond with the required JSON only.
+        `;
+
+    default:
+      throw new Error("Invalid mode when getting prompt.");
+  }
+};
+
+const getInterpretAgentSchema = (mode: RoutingTypeValue) => {
+  switch (mode) {
+    case RoutingType.SQL:
+      return getChartAgentSchema();
+    case RoutingType.VECTOR:
+      return getVectorAgentSchema();
+    case RoutingType.OTHER:
+      return getGeneralAgentSchema();
+    default:
+      throw new Error(
+        `Invalid mode received: '${mode}'. Cannot determine schema.`
+      );
+  }
+};
+
+const processRoutingAgent = async (
+  model: LanguageModelV1,
+  currentMessageContent: string,
+  formattedPreviousMessages: string
+) => {
+  try {
+    const { object: routingAgentResult } = await generateObject({
       model,
       temperature: 0,
-      schema: getAgent1Schema(),
-      system: getAgent1SystemPrompt(),
+      schema: getRoutingAgentSchema(),
+      system: getRoutingAgentSystemPrompt(),
       prompt: `
         User question:
         ${currentMessageContent}
@@ -40,33 +112,56 @@ export async function POST(req: Request) {
       `,
     });
 
-    const dbRows = [];
-    if (agent1Result.type === "technical") {
-      dbRows.push(...(await queryDb(agent1Result.sql!)));
-    }
+    return routingAgentResult;
+  } catch (error) {
+    throw new Error(`❌ Failed to Process Routing Agent: ${error}`);
+  }
+};
 
-    // Agent 2 - Chart agent
-    const agent2Result = streamText({
+export async function POST(req: Request) {
+  try {
+    const { messages } = await req.json();
+    const formattedPreviousMessages = messages
+      .slice(0, -1)
+      .map(formatMessage)
+      .join("\n");
+    const currentMessageContent = messages[messages.length - 1].content;
+
+    const model = openai(appConfig.model);
+
+    // Agent 1 - Routing Agent
+    const routingAgentResult = await processRoutingAgent(
+      model,
+      currentMessageContent,
+      formattedPreviousMessages
+    );
+
+    // Debug Routing Agent
+    console.log("✅ DEBUGING...");
+    debugRoutingAgent(routingAgentResult);
+
+    const queryResult = await getQueryResult(routingAgentResult);
+
+    // Debug Supabase Database Results
+    console.info("DEBUGING...");
+    console.log(`Database Results: ${queryResult.toString()}`);
+
+    // Agent 2 - Interpret Agent
+    const interpretAgentResult = streamText({
       model,
       temperature: 0,
       experimental_output: Output.object({
-        schema: getAgent2Schema(),
+        schema: getInterpretAgentSchema(routingAgentResult.mode),
       }),
       system: {
-        general: getAgent2GeneralSystemPrompt(),
-        technical: getAgent2TechnicalSystemPrompt(),
-      }[agent1Result.type],
-      prompt: `
-        reasoning: ${agent1Result.reasoning}
-        sql: ${agent1Result.sql}
-        data: ${JSON.stringify(dbRows)}
-        chartType: ${agent1Result.chartType}
-
-        Respond with the required JSON only.
-      `,
+        sql: getChartAgentSystemPrompt(),
+        vector: getVectorAgentSystemPrompt(),
+        other: getGeneralAgentSystemPrompt(),
+      }[routingAgentResult.mode],
+      prompt: getInterpretAgentPrompt(routingAgentResult, queryResult),
     });
 
-    return agent2Result.toDataStreamResponse();
+    return interpretAgentResult.toDataStreamResponse();
   } catch (error) {
     console.log("error:", error);
     return Response.json(
