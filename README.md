@@ -64,12 +64,12 @@ It lets non-technical users explore and visualise business data via **natural la
 
 **Snapshot Preview:**
 
-![Main Page](public/Main Page.png)  
-![Dynamic Data Visualisation - Bar Chart](public/Dynamic Data Visualisation - Bar chart.png)  
-![Dynamic Data Visualisation - Line Chart](public/Dynamic Data Visualisation - Line chart.png)  
-![Dynamic Data Visualisation - Pie Chart](public/Dynamic Data Visualisation - Pie chart.png)  
-![Vector-based Semantic Search](public/Vector-based Semantic Search.png)  
-![Deployment Dashboard](public/Depolyment Dashboard.png)  
+![Main Page](public/main_page.png)  
+![Dynamic Data Visualisation - Bar Chart](public/bar_chart.png)  
+![Dynamic Data Visualisation - Line Chart](public/line_chart.png)  
+![Dynamic Data Visualisation - Pie Chart](public/pie_chart.png)  
+![Vector-based Semantic Search](public/semantic_search.png)  
+![Deployment Dashboard](public/depolyment_dashboard.png)  
 
 ---
 
