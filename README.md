@@ -1,7 +1,8 @@
 # nextjs-ai-chat
 
-A **Conversational AI Assistant for Visualising Business Data Analytics** built with **Next.js**, **Material UI**, **Supabase (PostgresSQL)**, **ai-sdk**, and the **OpenAI API**.  
-It lets non-technical users explore and visualise business data via **natural language queries**, using custom LLM agents for **SQL generation**, **RAG (Retrieval-Augmented Generation)**, and **real-time charts** with AI-generated insights.
+A **Conversational AI Assistant for Visualising Business Data Analytics** built with **Next.js**, **Material UI**, **Supabase(PostgresSQL+pgvector)**, **ai-sdk**, **LangChain.js** and **OpenAI API**.  
+
+It lets non-technical users explore and visualise business data via **natural language queries**, using custom LLM agents for **SQL generation**, **real-time data visulisation**, and **vector-based semantic search** with AI-generated insights, integrating **RAG (Retrieval-Augmented Generation)**.
 
 [Live Demo (Vercel Project)](https://nextjs-ai-chat-mu-ten.vercel.app)
 
@@ -23,11 +24,13 @@ It lets non-technical users explore and visualise business data via **natural la
 
 ## Features
 
-- **Natural Language → SQL**: Automatically converts user questions into SQL queries.  
-- **RAG-Enhanced Answers**: Retrieves relevant context to improve accuracy and grounding.  
-- **Interactive Visualisations**: Renders charts from query results in real time.  
+- **Natural Language → SQL**: Routing: converts user questions into SQL queries.
+- **Natural Language → Vector-based Semantic Search**: Routing: transforms user questions into embeddings to retrieve semantically similar results.
+- **Natural Language → General Content**: Routing: directs user questions to the Agent for a general response.
+- **RAG-Enhanced Answers**: Retrieves relevant context to improve accuracy and grounding from database.  
+- **Interactive Visualisations**: Renders charts from query structured results in real time, supporting line, bar, and pie chart.  
 - **AI Insights**: Summarises findings next to the visuals for quick interpretation.  
-- **Production-Friendly Stack**: Next.js app routes, MUI components, ai-sdk orchestration, Supabase (PostgreSQL).  
+- **Production-Friendly Stack**: Next.js app routes, MUI components, ai-sdk orchestration, Supabase (PostgreSQL+pgvector).  
 - **Real Dataset**: Built and tested on a TikTok sales dataset to reflect real business scenarios.
 
 ---
@@ -36,10 +39,10 @@ It lets non-technical users explore and visualise business data via **natural la
 
 | Layer      | Technology |
 |-----------|------------|
-| Frontend  | Next.js, Material UI |
-| AI/LLM    | ai-sdk, OpenAI API |
+| Frontend  | React.js, Next.js, Material UI |
+| AI/LLM    | ai-sdk, LangChain.js, OpenAI API |
 | Backend   | Next.js API Routes, Node.js v22.8.0 |
-| Database  | Supabase (PostgreSQL) |
+| Database  | Supabase (PostgreSQL+pgvector) |
 | Deploy    | Vercel |
 
 ---
