@@ -72,7 +72,10 @@ export default function AssistantBubble({
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Typography sx={{ whiteSpace: "pre-line", color: "text.primary" }}>
+      <Typography
+        component="div"
+        sx={{ whiteSpace: "pre-line", color: "text.primary" }}
+      >
         <Typography component="span" fontWeight={700}>
           {`${appConfig.assistantName}: `}
         </Typography>

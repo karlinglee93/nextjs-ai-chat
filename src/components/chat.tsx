@@ -63,6 +63,7 @@ export function Chat() {
               height={64}
               className="w-64 h-auto"
               alt="Welcome Chat"
+              priority
             />
             <p className="mt-4 text-gray-500">Start your conversation here</p>
           </div>
