@@ -73,6 +73,7 @@ export default function LoginForm() {
         </div>
         <input type="hidden" name="redirectTo" value={callbackUrl} />
         <Button
+          type="submit"
           variant="contained"
           fullWidth
           disabled={isPending}

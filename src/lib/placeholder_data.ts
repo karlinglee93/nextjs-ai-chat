@@ -4,6 +4,6 @@ export const users = [
   {
     id: uuidv4(),
     email: "admin@tcd.ie",
-    password: "admin",
+    password: "adminadmin",
   },
 ];

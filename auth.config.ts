@@ -9,6 +9,8 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user;
       const isOnChatBox = nextUrl.pathname === "/";
 
+      console.info(`🔧 Middle ware: logged in: ${isLoggedIn}; on chatbox oage: ${isOnChatBox}`)
+
       if (isLoggedIn) {
         if (isOnChatBox) return true;
         return Response.redirect(new URL("/", nextUrl));
