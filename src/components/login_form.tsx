@@ -9,7 +9,7 @@ import {
 
 import Button from "@mui/material/Button";
 import { useActionState } from "react";
-import { authenticate } from "@//lib/actions";
+import { authenticate } from "@/lib/actions";
 import { useSearchParams } from "next/navigation";
 
 export default function LoginForm() {

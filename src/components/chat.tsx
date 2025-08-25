@@ -58,7 +58,7 @@ export function Chat() {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Image
-              src="/chatbot.jpg"
+              src="/chatbot.png"
               width={64}
               height={64}
               className="w-64 h-auto"
