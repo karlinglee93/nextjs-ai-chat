@@ -1,6 +1,11 @@
 import z from "zod";
 import { getRoutingAgentSchema } from "./schema";
 
+export interface User {
+  email: string;
+  password: string;
+}
+
 export enum RoutingType {
   SQL = "sql",
   VECTOR = "vector",
