@@ -5,10 +5,10 @@ import { useRef, useEffect } from "react";
 
 import { appConfig } from "@/lib/config";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import UserBubble from "@/components/ui/bubble_user";
-import AssistantBubble from "@/components/ui/bubble_assistant";
+import { Input } from "@/components/input";
+import { Button } from "@/components/button";
+import UserBubble from "@/components/bubble_user";
+import AssistantBubble from "@/components/bubble_assistant";
 import Image from "next/image";
 
 export function Chat() {
