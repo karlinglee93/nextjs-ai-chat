@@ -10,6 +10,7 @@ import { Button } from "@/components/button";
 import UserBubble from "@/components/bubble_user";
 import AssistantBubble from "@/components/bubble_assistant";
 import Image from "next/image";
+import LogoutButton from "./button_logout";
 
 export function Chat() {
   const { messages, input, handleInputChange, handleSubmit, setInput, status } =
@@ -47,10 +48,11 @@ export function Chat() {
   return (
     <main className="flex flex-col h-screen bg-background">
       <header className="sticky top-0 z-10 w-full bg-white/90 backdrop-blur border-b border-gray-200">
-        <div className="flex items-center px-4 py-3 max-w-7xl mx-auto">
+        <div className="flex justify-between items-center px-4 py-3 max-w-7xl mx-auto">
           <h1 className="text-lg font-medium text-gray-800">
             {appConfig.title}
           </h1>
+          <LogoutButton />
         </div>
       </header>
 
