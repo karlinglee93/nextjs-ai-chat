@@ -33,8 +33,10 @@ export const queryStructuredData = async (sql: string) => {
 const createSupabaseClient = () => {
   try {
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.tiktok_sales_2026_SUPABASE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL ??
+        process.env.NEXT_PUBLIC_tiktok_sales_2026_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY ??
+        process.env.tiktok_sales_2026_SUPABASE_SERVICE_ROLE_KEY!
     );
     return supabase;
   } catch (error) {
