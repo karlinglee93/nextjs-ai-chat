@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { createClient } from "@supabase/supabase-js";
 import { db } from "@vercel/postgres";
-import { embed, Message as VercelChatMessage } from "ai";
+import { embed, UIMessage as VercelChatMessage } from "ai";
 
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -11,7 +11,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const formatMessage = (message: VercelChatMessage) => {
-  return `*${message.role}: ${message.content}*`;
+  const text =
+    message.parts
+      ?.filter((p) => p.type === "text")
+      .map((p) => (p as { type: "text"; text: string }).text)
+      .join("") ?? "";
+  return `*${message.role}: ${text}*`;
 };
 
 export const queryStructuredData = async (sql: string) => {
@@ -29,7 +34,7 @@ const createSupabaseClient = () => {
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.tiktok_sales_2026_SUPABASE_SERVICE_ROLE_KEY!
     );
     return supabase;
   } catch (error) {

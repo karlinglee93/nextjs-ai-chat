@@ -1,4 +1,4 @@
-import { generateObject, LanguageModelV1, Output, streamText } from "ai";
+import { generateText, type LanguageModel, Output, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
 import { appConfig } from "@/lib/config";
@@ -35,10 +35,11 @@ const getQueryResult = async (
   try {
     switch (routingAgentResult.mode) {
       case RoutingType.SQL:
-        return await queryStructuredData(routingAgentResult.sql!);
+        return (await queryStructuredData(routingAgentResult.sql!)) ?? [];
       case RoutingType.VECTOR:
-        return await queryVectorEmbeddingData(
-          routingAgentResult.semanticQuery!
+        return (
+          (await queryVectorEmbeddingData(routingAgentResult.semanticQuery!)) ??
+          []
         );
       default:
         return [];
@@ -97,17 +98,16 @@ const getInterpretAgentSchema = (mode: RoutingTypeValue) => {
 };
 
 const proceedRoutingAgent = async (
-  model: LanguageModelV1,
+  model: LanguageModel,
   currentMessageContent: string,
   formattedPreviousMessages: string
 ) => {
   try {
-    const { object: routingAgentResult } = await generateObject({
+    const { output: routingAgentResult } = await generateText({
       model,
-      temperature: 0,
-      schema: getRoutingAgentSchema(),
-      // output: "no-schema",
+      output: Output.object({ schema: getRoutingAgentSchema() }),
       system: getRoutingAgentSystemPrompt(),
+      temperature: 0,
       prompt: `
         User question:
         ${currentMessageContent}
@@ -126,14 +126,13 @@ const proceedRoutingAgent = async (
 };
 
 const proceedInterpretAgent = async (
-  model: LanguageModelV1,
+  model: LanguageModel,
   routingAgentResult: RoutingAgentResult,
   queryResult: string[]
 ) => {
   try {
     const interpretAgentResult = streamText({
       model,
-      temperature: 0,
       experimental_output: Output.object({
         schema: getInterpretAgentSchema(routingAgentResult.mode),
       }),
@@ -145,7 +144,7 @@ const proceedInterpretAgent = async (
       prompt: getInterpretAgentPrompt(routingAgentResult, queryResult),
     });
 
-    console.debug("✅ Proceed Intrepret Agent Completed.");
+    console.debug("✅ Interpret Agent stream started.");
 
     return interpretAgentResult;
   } catch (error) {
@@ -160,7 +159,12 @@ export async function POST(req: Request) {
       .slice(0, -1)
       .map(formatMessage)
       .join("\n");
-    const currentMessageContent = messages[messages.length - 1].content;
+    const lastMessage = messages[messages.length - 1];
+    const currentMessageContent =
+      lastMessage.parts
+        ?.filter((p: { type: string }) => p.type === "text")
+        .map((p: { text: string }) => p.text)
+        .join("") ?? "";
 
     const model = openai(appConfig.model);
 
@@ -190,7 +194,7 @@ export async function POST(req: Request) {
       queryResult
     );
 
-    return interpretAgentResult.toDataStreamResponse();
+    return interpretAgentResult.toUIMessageStreamResponse();
   } catch (error) {
     console.log("error:", error);
     return Response.json(

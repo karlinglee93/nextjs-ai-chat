@@ -2,7 +2,7 @@ export const appConfig = {
   title: "NORA: TikTok Sales Assistant",
   assistantName: "NORA",
   themeColor: "#8A2BE2",
-  model: "gpt-4.1-nano",
+  model: "gpt-5.4-nano-2026-03-17",
 };
 
 export const sampleQs = {

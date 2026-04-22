@@ -59,9 +59,10 @@ export const getRoutingAgentSystemPrompt = () => `
   1) Keep reasoning concise (<= 40 words) and **English only**.
   2) For **sql**: never use \`SELECT *\`; only a single SELECT statement; whitelist columns only; always enforce LIMIT ≤ 5 unless aggregation.
   3) For **sql** questions like "top/best/most/least", use \`ORDER BY\` correct numeric column + \`LIMIT\` (≤ 5).
-  4) For **vector**: semantic_query must be a compact description about the **bio field** (e.g., "Chinese-speaking, humorous family life in Japan"); always use bio_embedding.
-  5) If neither route fits, return **type="other"** with a clear reason.
-  6) Output **only** the JSON object, no prose, no backticks.
+  4) PostgreSQL does NOT resolve SELECT aliases inside expressions in \`ORDER BY\` or \`GROUP BY\` (e.g. \`ORDER BY CASE WHEN my_alias = ...\` fails with "column does not exist"). When bucketing with \`CASE\`, order by an underlying numeric column instead — e.g. \`ORDER BY MIN(video_count)\` — or repeat the full \`CASE\` expression. Never reference a SELECT alias from inside another expression.
+  5) For **vector**: semanticQuery must be a compact description about the **bio field** (e.g., "Chinese-speaking, humorous family life in Japan"); always use bio_embedding.
+  6) If neither route fits, return **mode="other"** with a clear reason.
+  7) Output **only** the JSON object, no prose, no backticks.
 `;
 
 /*
@@ -73,9 +74,8 @@ You are the **Other Agent**. You handle queries that cannot be answered via SQL 
 BACKGROUND
 You work with the \`tiktok_sales\` database. Allowed columns:
 - douyin_id, name, bio, region, gender, follower_count, video_count, duration,
-  average_views, total_likes, total_danmaku_count, danmaku_user_count,
-  danmaku_content, total_sales_amount, gift_senders_count, gift_income,
-  top_donors, product_category
+  average_views, total_likes, total_danmaku_count, danmaku_content,
+  total_sales_amount, gift_senders_count, gift_income, product_category
 
 INPUT FIELDS (provided in the prompt)
 - reasoning: why the question cannot be answered via SQL/vector
@@ -107,7 +107,7 @@ INPUT (provided in prompt)
 
 TASK
 1) Create an "interpret" field:
-   - A concise English insight (≤ 40 words) describing what the data shows.
+   - A concise English insight (≤ 50 words) describing what the data shows.
 
 2) Determine the final "chartType":
    - If input.chartType is non-null, **use it exactly**.
@@ -124,9 +124,10 @@ TASK
        }
    - For line:
        {
-         xAxis: [{ data: [1,2,3,...] }],
+         xAxis: [{ data: ["1","2","3",...] }],
          series: [{ data: [5,6,7,...] }]
        }
+     Note: xAxis \`data\` must be an array of strings — convert numeric labels to strings.
    - For pie:
        {
          data: [
@@ -140,9 +141,9 @@ RULES
 - English only.
 - Do not invent values: use only what is in the "data".
 - If data is empty, still return a valid object with:
-  "formattedData" as an empty array or empty structure,
   "interpret" = "No data available to display.",
-  "chartType" = the resolved chart type (bar by default).
+  "chartType" = input.chartType ?? "bar",
+  "formattedData" = { "xAxis": null, "series": null, "data": [] }.
 `;
 
 export const getVectorAgentSystemPrompt = () => `
@@ -179,4 +180,5 @@ RULES
 - English only.
 - Be faithful to the input rows; do NOT invent facts.
 - Keep bio snippets readable: remove newlines/extra spaces; truncate safely (no mid-word splits if possible).
+- Coerce \`id\` to a string; if \`name\` is missing, use \`"creator-<id>"\` — never emit an empty name.
 `;

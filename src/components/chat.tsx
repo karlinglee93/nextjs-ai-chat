@@ -1,7 +1,8 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { useRef, useEffect } from "react";
+import { useChat, UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { useRef, useEffect, useState } from "react";
 
 import { appConfig } from "@/lib/config";
 
@@ -12,14 +13,20 @@ import AssistantBubble from "@/components/bubble_assistant";
 import Image from "next/image";
 import LogoutButton from "./button_logout";
 
+const getTextContent = (msg: UIMessage) =>
+  msg.parts
+    .filter((p) => p.type === "text")
+    .map((p) => (p as { type: "text"; text: string }).text)
+    .join("");
+
 export function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, setInput, status } =
-    useChat({
-      api: "api/chat",
-      onError: (e) => {
-        console.log(e);
-      },
-    });
+  const [inputValue, setInputValue] = useState("");
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({ api: "api/chat" }),
+    onError: (e) => {
+      console.log(e);
+    },
+  });
   const chatParent = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
@@ -31,19 +38,22 @@ export function Chat() {
 
   useEffect(() => {
     const listener = (e: Event) => {
-      const customEvent = e as CustomEvent<string>;
-      const question = customEvent.detail;
-      setInput(question);
-      setTimeout(() => {
-        handleSubmit(new Event("submit") as any);
-      }, 50);
+      const question = (e as CustomEvent<string>).detail;
+      sendMessage({ text: question });
     };
 
     window.addEventListener("send-chat", listener);
     return () => {
       window.removeEventListener("send-chat", listener);
     };
-  }, [handleSubmit, setInput]);
+  }, [sendMessage]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    sendMessage({ text: inputValue });
+    setInputValue("");
+  };
 
   return (
     <main className="flex flex-col h-screen bg-background">
@@ -80,11 +90,11 @@ export function Chat() {
                 isLast && m.role === "assistant" && status === "streaming";
 
               return m.role === "user" ? (
-                <UserBubble key={i} text={m.content as string} />
+                <UserBubble key={i} text={getTextContent(m)} />
               ) : (
                 <AssistantBubble
                   key={i}
-                  content={m.content as string}
+                  content={getTextContent(m)}
                   streaming={streaming}
                 />
               );
@@ -101,13 +111,13 @@ export function Chat() {
           <Input
             className="flex-1 min-h-[40px] rounded-lg px-4 py-2 text-sm border border-gray-300 bg-[#f7f7f8] shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Send a message..."
-            value={input}
-            onChange={handleInputChange}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
           />
           <Button
             className="ml-2 px-4 py-2 rounded-xl text-sm"
             type="submit"
-            disabled={!input.trim()}
+            disabled={!inputValue.trim()}
           >
             Send
           </Button>

@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import { appConfig } from "@/lib/config";
 import { BarChart, LineChart, PieChart } from "@mui/x-charts";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { AssistantData } from "@/lib/definition";
@@ -21,49 +21,68 @@ export default function AssistantBubble({
   content: string;
   streaming: boolean;
 }) {
-  /** Try to parse JSON into AssistantData */
-  let parsed: AssistantData | null = null;
-  try {
-    const tmp = JSON.parse(content);
-    if (
-      tmp &&
-      typeof tmp === "object" &&
-      ("interpret" in tmp || "reasoning" in tmp)
-    )
-      parsed = tmp as AssistantData;
-  } catch {
-    /* not JSON */
-  }
+  /** Try to parse JSON into AssistantData (memoized so chart props are stable across re-renders) */
+  const parsed = useMemo<AssistantData | null>(() => {
+    try {
+      const tmp = JSON.parse(content);
+      if (
+        tmp &&
+        typeof tmp === "object" &&
+        ("interpret" in tmp || "reasoning" in tmp)
+      ) {
+        return tmp as AssistantData;
+      }
+    } catch {
+      /* not JSON */
+    }
+    return null;
+  }, [content]);
+
+  const chartProps = useMemo(() => {
+    if (!parsed?.data || !parsed.formattedData || !parsed.chartType)
+      return null;
+    switch (parsed.chartType) {
+      case "bar":
+      case "line":
+        return {
+          type: parsed.chartType,
+          xAxis: [{ data: parsed.formattedData.xAxis[0].data }],
+          series: [{ data: parsed.formattedData.series[0].data }],
+        };
+      case "pie":
+        return {
+          type: parsed.chartType,
+          series: [{ data: parsed.formattedData.data }],
+        };
+      default:
+        return null;
+    }
+  }, [parsed]);
 
   const [open, setOpen] = useState(false);
 
-  const renderChart = (d: AssistantData) => {
-    if (!d.data || !d.formattedData || !d.chartType) return null;
-
-    switch (d.chartType) {
+  const renderChart = () => {
+    if (!chartProps) return null;
+    switch (chartProps.type) {
       case "bar":
         return (
           <BarChart
-            xAxis={[{ data: d.formattedData.xAxis[0].data }]}
-            series={[{ data: d.formattedData.series[0].data }]}
+            xAxis={chartProps.xAxis}
+            series={chartProps.series}
             height={300}
           />
         );
       case "line":
         return (
           <LineChart
-            xAxis={[{ data: d.formattedData.xAxis[0].data }]}
-            series={[{ data: d.formattedData.series[0].data }]}
+            xAxis={chartProps.xAxis}
+            series={chartProps.series}
             height={300}
           />
         );
       case "pie":
         return (
-          <PieChart
-            series={[{ data: d.formattedData.data }]}
-            width={200}
-            height={200}
-          />
+          <PieChart series={chartProps.series} width={200} height={200} />
         );
       default:
         return null;
@@ -132,7 +151,6 @@ export default function AssistantBubble({
                     <strong>Interpret:</strong> {parsed.interpret}
                   </Typography>
                 )}
-                {renderChart(parsed)}
               </Stack>
             ) : (
               content
@@ -140,6 +158,12 @@ export default function AssistantBubble({
           </>
         )}
       </Typography>
+
+      {/* Chart rendered outside Typography in a stable-width container to avoid
+          MUI X Charts ResizeObserver feedback loops. */}
+      {!streaming && chartProps && (
+        <Box sx={{ width: "100%", maxWidth: 600, mt: 1 }}>{renderChart()}</Box>
+      )}
 
       {streaming && (
         <CircularProgress
