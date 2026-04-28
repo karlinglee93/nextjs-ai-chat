@@ -1,7 +1,9 @@
 import * as ai from "ai";
 import { type LanguageModel, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { Client } from "langsmith";
 import { wrapAISDK } from "langsmith/experimental/vercel";
+import { after } from "next/server";
 
 import { appConfig } from "@/lib/config";
 import {
@@ -29,7 +31,8 @@ import {
 } from "@/lib/definition";
 import { debugRoutingAgent } from "@/lib/debug";
 
-const { generateText, streamText } = wrapAISDK(ai);
+const langsmithClient = new Client();
+const { generateText, streamText } = wrapAISDK(ai, { client: langsmithClient });
 
 setupGlobalProxy();
 
@@ -197,6 +200,10 @@ export async function POST(req: Request) {
       routingAgentResult,
       queryResult
     );
+
+    after(async () => {
+      await langsmithClient.awaitPendingTraceBatches();
+    });
 
     return interpretAgentResult.toUIMessageStreamResponse();
   } catch (error) {
