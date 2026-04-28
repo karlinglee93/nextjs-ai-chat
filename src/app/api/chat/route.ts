@@ -2,6 +2,7 @@ import * as ai from "ai";
 import { type LanguageModel, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { Client } from "langsmith";
+import { traceable } from "langsmith/traceable";
 import { wrapAISDK } from "langsmith/experimental/vercel";
 import { after } from "next/server";
 
@@ -175,31 +176,34 @@ export async function POST(req: Request) {
 
     const model = openai(appConfig.model);
 
-    // Agent 1 - Routing Agent
-    const routingAgentResult = await proceedRoutingAgent(
-      model,
-      currentMessageContent,
-      formattedPreviousMessages
+    const runChatPipeline = traceable(
+      async () => {
+        // Agent 1 - Routing Agent
+        const routingAgentResult = await proceedRoutingAgent(
+          model,
+          currentMessageContent,
+          formattedPreviousMessages
+        );
+
+        // Debug Routing Agent
+        console.log("⌛️ DEBUGING Routing Agent...");
+        debugRoutingAgent(routingAgentResult);
+        console.log("✅ DEBUGING Routing Agent Completed.");
+
+        const queryResult = await getQueryResult(routingAgentResult);
+
+        // Debug Supabase Database Results
+        console.debug("⌛️ DEBUGING Retrieved Data from Databases...");
+        console.debug("🔧 Queried Database Results: ", queryResult);
+        console.log("✅ DEBUGING Retrieved Data Completed.");
+
+        // Agent 2 - Interpret Agent
+        return proceedInterpretAgent(model, routingAgentResult, queryResult);
+      },
+      { name: "chat-pipeline", client: langsmithClient }
     );
 
-    // Debug Routing Agent
-    console.log("⌛️ DEBUGING Routing Agent...");
-    debugRoutingAgent(routingAgentResult);
-    console.log("✅ DEBUGING Routing Agent Completed.");
-
-    const queryResult = await getQueryResult(routingAgentResult);
-
-    // Debug Supabase Database Results
-    console.debug("⌛️ DEBUGING Retrieved Data from Databases...");
-    console.debug("🔧 Queried Database Results: ", queryResult);
-    console.log("✅ DEBUGING Retrieved Data Completed.");
-
-    // Agent 2 - Interpret Agent
-    const interpretAgentResult = await proceedInterpretAgent(
-      model,
-      routingAgentResult,
-      queryResult
-    );
+    const interpretAgentResult = await runChatPipeline();
 
     after(async () => {
       await langsmithClient.awaitPendingTraceBatches();
