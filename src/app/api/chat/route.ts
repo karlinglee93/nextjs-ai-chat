@@ -1,5 +1,7 @@
-import { generateText, type LanguageModel, Output, streamText } from "ai";
+import * as ai from "ai";
+import { type LanguageModel, Output } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { wrapAISDK } from "langsmith/experimental/vercel";
 
 import { appConfig } from "@/lib/config";
 import {
@@ -26,6 +28,8 @@ import {
   RoutingTypeValue,
 } from "@/lib/definition";
 import { debugRoutingAgent } from "@/lib/debug";
+
+const { generateText, streamText } = wrapAISDK(ai);
 
 setupGlobalProxy();
 
