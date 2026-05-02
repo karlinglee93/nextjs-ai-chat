@@ -28,13 +28,16 @@ export function Chat() {
     },
   });
   const chatParent = useRef<HTMLUListElement>(null);
+  const lastUserMsgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const node = chatParent.current;
-    if (node) {
-      node.scrollTop = node.scrollHeight;
+    if (status === "submitted") {
+      lastUserMsgRef.current?.scrollIntoView({
+        block: "start",
+        behavior: "smooth",
+      });
     }
-  }, [messages]);
+  }, [status]);
 
   useEffect(() => {
     const listener = (e: Event) => {
@@ -86,19 +89,32 @@ export function Chat() {
           >
             {messages.map((m, i) => {
               const isLast = i === messages.length - 1;
+              const isLastUser =
+                m.role === "user" &&
+                (isLast ||
+                  (i === messages.length - 2 &&
+                    messages[messages.length - 1].role === "assistant"));
               const streaming =
                 isLast && m.role === "assistant" && status === "streaming";
 
               return m.role === "user" ? (
-                <UserBubble key={i} text={getTextContent(m)} />
+                <div key={m.id} ref={isLastUser ? lastUserMsgRef : null}>
+                  <UserBubble text={getTextContent(m)} />
+                </div>
               ) : (
                 <AssistantBubble
-                  key={i}
+                  key={m.id}
                   content={getTextContent(m)}
                   streaming={streaming}
                 />
               );
             })}
+            {status === "submitted" && (
+              <AssistantBubble content="" streaming={true} />
+            )}
+            {(status === "submitted" || status === "streaming") && (
+              <div aria-hidden className="shrink-0" style={{ minHeight: "60vh" }} />
+            )}
           </ul>
         )}
       </section>
