@@ -3,6 +3,7 @@ export const appConfig = {
   assistantName: "NORA",
   themeColor: "#8A2BE2",
   model: "gpt-5.4-nano-2026-03-17",
+  chartMaxAttempts: 2,
 };
 
 export const sampleQs = {

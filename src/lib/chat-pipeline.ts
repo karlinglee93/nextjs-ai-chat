@@ -54,8 +54,19 @@ export const getQueryResult = async (
 
 const getInterpretAgentPrompt = (
   routingAgentResult: RoutingAgentResult,
-  queryResult: string[]
+  queryResult: string[],
+  validationError?: string
 ) => {
+  const correction = validationError
+    ? `
+
+          Your previous response failed shape validation: ${validationError}.
+          Re-emit the JSON, strictly obeying:
+          - bar/line: xAxis=[{data:[strings]}], series=[{data:[numbers]}], data=null
+          - pie:      data=[{id,value,label}], xAxis=null, series=null
+        `
+    : "";
+
   switch (routingAgentResult.mode) {
     case RoutingType.SQL:
       return `
@@ -63,7 +74,7 @@ const getInterpretAgentPrompt = (
           sql: ${routingAgentResult.sql}
           data: ${JSON.stringify(queryResult)}
           chartType: ${routingAgentResult.chartType}
-
+${correction}
           Respond with the required JSON only.
         `;
     case RoutingType.VECTOR:
@@ -130,7 +141,8 @@ export const proceedRoutingAgent = async (
 export const proceedInterpretAgent = (
   model: LanguageModel,
   routingAgentResult: RoutingAgentResult,
-  queryResult: string[]
+  queryResult: string[],
+  validationError?: string
 ) => {
   try {
     const interpretAgentResult = streamText({
@@ -143,7 +155,11 @@ export const proceedInterpretAgent = (
         vector: getVectorAgentSystemPrompt(),
         other: getGeneralAgentSystemPrompt(),
       }[routingAgentResult.mode],
-      prompt: getInterpretAgentPrompt(routingAgentResult, queryResult),
+      prompt: getInterpretAgentPrompt(
+        routingAgentResult,
+        queryResult,
+        validationError
+      ),
     });
 
     console.debug("✅ Interpret Agent stream started.");

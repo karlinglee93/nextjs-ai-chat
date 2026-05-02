@@ -4,6 +4,7 @@ import { Output } from "ai";
 import { z } from "zod";
 import type { EvaluationResult } from "langsmith/evaluation";
 
+import { validateChartShape } from "@/lib/chart-validation";
 import { appConfig } from "@/lib/config";
 
 type EvalArgs = {
@@ -66,45 +67,11 @@ export const chartShapeEvaluator = ({
   referenceOutputs,
 }: EvalArgs): EvaluationResult | EvaluationResult[] => {
   if (referenceOutputs?.expectedMode !== "sql") return SKIP;
-  const fd = outputs.formattedData;
-  const chartType = outputs.chartType;
-  if (!fd || !chartType) {
-    return { key: "chart_shape", score: 0, comment: "missing formattedData or chartType" };
-  }
-
-  // bar/line need xAxis[0].data and series[0].data populated (renderer accesses
-  // them positionally, see bubble_assistant.tsx). pie needs data[] populated.
-  const xAxisFilled =
-    Array.isArray(fd.xAxis) &&
-    fd.xAxis.length > 0 &&
-    Array.isArray(fd.xAxis[0]?.data) &&
-    fd.xAxis[0].data.length > 0;
-  const seriesFilled =
-    Array.isArray(fd.series) &&
-    fd.series.length > 0 &&
-    Array.isArray(fd.series[0]?.data) &&
-    fd.series[0].data.length > 0;
-  const dataFilled = Array.isArray(fd.data) && fd.data.length > 0;
-
-  // Treat null and undefined ("omitted") as equivalent for absent fields.
-  const xAxisAbsent = fd.xAxis == null;
-  const seriesAbsent = fd.series == null;
-  const dataAbsent = fd.data == null;
-
-  let pass = false;
-  if (chartType === "bar" || chartType === "line") {
-    pass = xAxisFilled && seriesFilled && dataAbsent;
-  } else if (chartType === "pie") {
-    pass = dataFilled && xAxisAbsent && seriesAbsent;
-  }
-
-  const describe = (filled: boolean, absent: boolean) =>
-    filled ? "filled" : absent ? "absent" : "malformed";
-
+  const result = validateChartShape(outputs.formattedData, outputs.chartType);
   return {
     key: "chart_shape",
-    score: pass ? 1 : 0,
-    comment: `chartType=${chartType} xAxis=${describe(xAxisFilled, xAxisAbsent)} series=${describe(seriesFilled, seriesAbsent)} data=${describe(dataFilled, dataAbsent)}`,
+    score: result.ok ? 1 : 0,
+    comment: result.reason,
   };
 };
 

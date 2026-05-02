@@ -5,8 +5,10 @@ import {
   proceedInterpretAgent,
   proceedRoutingAgent,
 } from "@/lib/chat-pipeline";
+import { validateChartShape } from "@/lib/chart-validation";
+import { appConfig } from "@/lib/config";
 import { debugRoutingAgent } from "@/lib/debug";
-import { RoutingAgentResult } from "@/lib/definition";
+import { RoutingAgentResult, RoutingType } from "@/lib/definition";
 import {
   queryStructuredData,
   queryVectorEmbeddingData,
@@ -102,10 +104,57 @@ const interpretOther = async (state: ChatState): Promise<ChatStateUpdate> => {
   };
 };
 
-// No-op stubs today. Future: chart-format Zod refine, bounded retry, table fallback.
-const validate = async (state: ChatState): Promise<ChatStateUpdate> => state;
-const fix = async (state: ChatState): Promise<ChatStateUpdate> => state;
-const fallback = async (state: ChatState): Promise<ChatStateUpdate> => state;
+const validate = async (state: ChatState): Promise<ChatStateUpdate> => {
+  await state.interpretStream!.consumeStream();
+  const obj = (await state.interpretStream!.output) as {
+    chartType?: "bar" | "line" | "pie";
+    formattedData?: unknown;
+  };
+  const result = validateChartShape(obj.formattedData, obj.chartType);
+  if (result.ok) {
+    console.debug("✅ Chart shape valid");
+    return { validationError: undefined };
+  }
+  console.debug(
+    "⚠️ Chart shape invalid:",
+    result.reason,
+    "attempts:",
+    state.chartAttempts
+  );
+  return { validationError: result.reason };
+};
+
+const fix = async (state: ChatState): Promise<ChatStateUpdate> => {
+  console.debug(
+    `🔁 Retrying chart agent (attempt ${state.chartAttempts + 1}/${appConfig.chartMaxAttempts})`
+  );
+  return {
+    interpretStream: proceedInterpretAgent(
+      state.model,
+      state.routingAgentResult!,
+      state.queryResult,
+      state.validationError
+    ),
+    chartAttempts: state.chartAttempts + 1,
+  };
+};
+
+const fallback = async (state: ChatState): Promise<ChatStateUpdate> => {
+  console.debug(
+    `🛟 Falling back to text-only after ${state.chartAttempts} failed attempts`
+  );
+  return {
+    interpretStream: proceedInterpretAgent(
+      state.model,
+      {
+        ...state.routingAgentResult!,
+        mode: RoutingType.OTHER,
+        reasoning: `${state.routingAgentResult!.reasoning}\n\nNote: chart rendering failed validation ${state.chartAttempts} times. Summarize this data textually: ${JSON.stringify(state.queryResult).slice(0, 2000)}`,
+      },
+      []
+    ),
+  };
+};
 
 // Pure passthrough — must NOT call consumeStream() or await output here, because
 // the eval (scripts/eval/run.ts) consumes the stream itself and expects the
@@ -115,11 +164,13 @@ const stream = async (state: ChatState): Promise<ChatStateUpdate> => state;
 const routeMode = (state: ChatState): "sql" | "vector" | "other" =>
   state.routingAgentResult!.mode;
 
-// Today this always returns "valid", so fix/fallback are unreachable.
-// When real validation lands, only this function changes.
 const routeValidation = (
-  _state: ChatState
-): "valid" | "invalid_retry" | "invalid_max" => "valid";
+  state: ChatState
+): "valid" | "invalid_retry" | "invalid_max" => {
+  if (!state.validationError) return "valid";
+  if (state.chartAttempts >= appConfig.chartMaxAttempts) return "invalid_max";
+  return "invalid_retry";
+};
 
 const builder = new StateGraph(ChatStateAnnotation)
   .addNode("format_input", formatInput)
