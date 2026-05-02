@@ -3,6 +3,7 @@ import { type LanguageModel, Output } from "ai";
 import { Client } from "langsmith";
 import { wrapAISDK } from "langsmith/experimental/vercel";
 
+import { chatGraph } from "@/lib/chat-graph";
 import {
   queryStructuredData,
   queryVectorEmbeddingData,
@@ -24,7 +25,6 @@ import {
   RoutingType,
   RoutingTypeValue,
 } from "@/lib/definition";
-import { debugRoutingAgent } from "@/lib/debug";
 
 export const langsmithClient = new Client();
 
@@ -159,25 +159,15 @@ export async function runChatPipelineCore(args: {
   question: string;
   history?: string;
 }) {
-  const { model, question, history = "" } = args;
+  const finalState = await chatGraph.invoke({
+    model: args.model,
+    question: args.question,
+    history: args.history ?? "",
+  });
 
-  const routingAgentResult = await proceedRoutingAgent(model, question, history);
-
-  console.log("⌛️ DEBUGING Routing Agent...");
-  debugRoutingAgent(routingAgentResult);
-  console.log("✅ DEBUGING Routing Agent Completed.");
-
-  const queryResult = await getQueryResult(routingAgentResult);
-
-  console.debug("⌛️ DEBUGING Retrieved Data from Databases...");
-  console.debug("🔧 Queried Database Results: ", queryResult);
-  console.log("✅ DEBUGING Retrieved Data Completed.");
-
-  const interpretStream = proceedInterpretAgent(
-    model,
-    routingAgentResult,
-    queryResult
-  );
-
-  return { routingAgentResult, queryResult, interpretStream };
+  return {
+    routingAgentResult: finalState.routingAgentResult!,
+    queryResult: finalState.queryResult,
+    interpretStream: finalState.interpretStream!,
+  };
 }
