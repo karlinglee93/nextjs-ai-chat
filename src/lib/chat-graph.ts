@@ -176,27 +176,35 @@ const builder = new StateGraph(ChatStateAnnotation)
   .addNode("format_input", formatInput)
   .addNode("routing_agent", routingAgent)
   .addNode("emit_reasoning", emitReasoning)
+  // SQL lane
   .addNode("query_sql", querySql)
-  .addNode("embed_query", embedQuery)
-  .addNode("vector_search", vectorSearch)
   .addNode("interpret_sql", interpret)
-  .addNode("interpret_vector", interpret)
-  .addNode("interpret_other", interpretOther)
   .addNode("validate", validate)
   .addNode("fix", fix)
   .addNode("fallback", fallback)
+  // Vector lane
+  .addNode("embed_query", embedQuery)
+  .addNode("vector_search", vectorSearch)
+  .addNode("interpret_vector", interpret)
+  // Other lane
+  .addNode("interpret_other", interpretOther)
+
+  // NEW: collect + synthesize
+  // .addNode("collect_task_result", collectTaskResult)  // reducer 写回 state
+  // .addNode("synthesize", synthesize)
   .addNode("stream", stream)
+
   .addEdge(START, "format_input")
   .addEdge("format_input", "routing_agent")
   .addEdge("routing_agent", "emit_reasoning")
+  
   .addConditionalEdges("emit_reasoning", routeMode, {
     sql: "query_sql",
     vector: "embed_query",
     other: "interpret_other",
   })
+  // sql lane edges
   .addEdge("query_sql", "interpret_sql")
-  .addEdge("embed_query", "vector_search")
-  .addEdge("vector_search", "interpret_vector")
   .addEdge("interpret_sql", "validate")
   .addConditionalEdges("validate", routeValidation, {
     valid: "stream",
@@ -205,8 +213,13 @@ const builder = new StateGraph(ChatStateAnnotation)
   })
   .addEdge("fix", "validate")
   .addEdge("fallback", "stream")
+
+
+  .addEdge("embed_query", "vector_search")
+  .addEdge("vector_search", "interpret_vector")
   .addEdge("interpret_vector", "stream")
   .addEdge("interpret_other", "stream")
+  
   .addEdge("stream", END);
 
 export const chatGraph = builder.compile();
